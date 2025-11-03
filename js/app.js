@@ -2425,8 +2425,22 @@ class App {
         }
 
         const fullName = fullNameEl.value.trim();
-        const email = emailEl.value.trim();
+        let email = emailEl.value.trim();
         const phone = phoneEl.value.trim();
+
+        // Get authenticated user email from Firebase Auth (primary source)
+        if (window.auth && window.auth.currentUser) {
+            const authEmail = window.auth.currentUser.email || '';
+            // Use Firebase Auth email as the source of truth
+            if (authEmail && email !== authEmail) {
+                // Email doesn't match Auth email, use Auth email instead
+                email = authEmail;
+                emailEl.value = email;
+            } else if (!email) {
+                email = authEmail;
+                emailEl.value = email;
+            }
+        }
 
         // Validation
         if (!fullName) {
@@ -3555,46 +3569,80 @@ class App {
     }
 
     async loadProfileData() {
-        if (!window.db) {
-            console.warn('Firebase not initialized, using default profile data');
-            // Set defaults if Firebase not available
-            const nameEl = document.getElementById('profileName');
-            const emailEl = document.getElementById('profileEmail');
-            if (nameEl) nameEl.textContent = 'Admin User';
-            if (emailEl) emailEl.textContent = 'admin@otomono.com';
-            return;
+        const nameEl = document.getElementById('profileName');
+        const emailEl = document.getElementById('profileEmail');
+
+        // First, get the current authenticated user from Firebase Auth
+        let currentUser = null;
+        if (window.auth) {
+            currentUser = window.auth.currentUser;
+
+            // If no current user, wait for auth state to be determined
+            if (!currentUser) {
+                return new Promise((resolve) => {
+                    const unsubscribe = window.auth.onAuthStateChanged((user) => {
+                        unsubscribe(); // Unsubscribe after first check
+                        if (user) {
+                            // User is authenticated, use their email
+                            if (emailEl) {
+                                emailEl.textContent = user.email || 'admin@otomono.com';
+                            }
+                            if (nameEl) {
+                                // Try to get display name from Auth, or use email prefix
+                                const displayName = user.displayName || (user.email ? user.email.split('@')[0] : 'Admin User');
+                                nameEl.textContent = displayName;
+                            }
+                            resolve();
+                        } else {
+                            // Not authenticated, but we shouldn't reach here if checkAuth worked
+                            if (emailEl) emailEl.textContent = 'Not logged in';
+                            if (nameEl) nameEl.textContent = 'Guest';
+                            resolve();
+                        }
+                    });
+                });
+            }
         }
 
-        try {
-            const settingsDoc = await db.collection('settings').doc('profile').get();
-            if (settingsDoc.exists()) {
-                const data = settingsDoc.data();
-                const nameEl = document.getElementById('profileName');
-                const emailEl = document.getElementById('profileEmail');
-
-                if (nameEl) {
-                    nameEl.textContent = data.fullName || 'Admin User';
-                }
-                if (emailEl) {
-                    emailEl.textContent = data.email || 'admin@otomono.com';
-                }
-
-                console.log('Profile dropdown updated:', {
-                    name: data.fullName,
-                    email: data.email
-                });
-            } else {
-                // No profile data exists, use defaults
-                const nameEl = document.getElementById('profileName');
-                const emailEl = document.getElementById('profileEmail');
-                if (nameEl) nameEl.textContent = 'Admin User';
-                if (emailEl) emailEl.textContent = 'admin@otomono.com';
+        // If we have a current user, use their email from Auth
+        if (currentUser) {
+            if (emailEl) {
+                emailEl.textContent = currentUser.email || 'admin@otomono.com';
             }
-        } catch (error) {
-            console.error('Error loading profile data:', error);
-            // Set defaults on error
-            const nameEl = document.getElementById('profileName');
-            const emailEl = document.getElementById('profileEmail');
+            if (nameEl) {
+                // Try to get name from Firestore settings, or use Auth display name, or email prefix
+                if (window.db) {
+                    try {
+                        const settingsDoc = await db.collection('settings').doc('profile').get();
+                        if (settingsDoc.exists()) {
+                            const data = settingsDoc.data();
+                            if (data.fullName) {
+                                nameEl.textContent = data.fullName;
+                            } else {
+                                // Fallback to Auth display name or email prefix
+                                nameEl.textContent = currentUser.displayName || (currentUser.email ? currentUser.email.split('@')[0] : 'Admin User');
+                            }
+                        } else {
+                            // No Firestore profile, use Auth data
+                            nameEl.textContent = currentUser.displayName || (currentUser.email ? currentUser.email.split('@')[0] : 'Admin User');
+                        }
+                    } catch (error) {
+                        console.error('Error loading profile name from Firestore:', error);
+                        // Fallback to Auth data
+                        nameEl.textContent = currentUser.displayName || (currentUser.email ? currentUser.email.split('@')[0] : 'Admin User');
+                    }
+                } else {
+                    // No Firestore, use Auth data
+                    nameEl.textContent = currentUser.displayName || (currentUser.email ? currentUser.email.split('@')[0] : 'Admin User');
+                }
+            }
+
+            console.log('Profile dropdown updated from Auth:', {
+                email: currentUser.email,
+                displayName: currentUser.displayName
+            });
+        } else {
+            // Fallback if no auth
             if (nameEl) nameEl.textContent = 'Admin User';
             if (emailEl) emailEl.textContent = 'admin@otomono.com';
         }
@@ -3608,10 +3656,24 @@ class App {
         );
 
         if (confirmed) {
-            this.showNotification('Logged out successfully', 'info');
-            this.closeProfileDropdown();
-            // In a real app, you would clear auth tokens and redirect
-            // window.location.href = '/login';
+            try {
+                // Sign out from Firebase
+                if (window.auth) {
+                    await window.auth.signOut();
+                }
+
+                this.showNotification('Logged out successfully', 'info');
+                this.closeProfileDropdown();
+
+                // Redirect to login page after a short delay
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 500);
+            } catch (error) {
+                console.error('Logout error:', error);
+                this.showNotification('Error logging out: ' + error.message, 'error');
+                this.closeProfileDropdown();
+            }
         }
     }
 
@@ -3759,24 +3821,37 @@ class App {
     async loadSettingsData() {
         if (!window.db) return;
         try {
+            const fullNameEl = document.getElementById('fullName');
+            const emailEl = document.getElementById('userEmail');
+            const phoneEl = document.getElementById('userPhone');
+
+            // Get authenticated user email from Firebase Auth (primary source)
+            let authEmail = '';
+            if (window.auth && window.auth.currentUser) {
+                authEmail = window.auth.currentUser.email || '';
+            }
+
+            // Try to load from Firestore settings
             const settingsDoc = await db.collection('settings').doc('profile').get();
             if (settingsDoc.exists()) {
                 const data = settingsDoc.data();
-                const fullNameEl = document.getElementById('fullName');
-                const emailEl = document.getElementById('userEmail');
-                const phoneEl = document.getElementById('userPhone');
-
                 if (fullNameEl) fullNameEl.value = data.fullName || '';
-                if (emailEl) emailEl.value = data.email || '';
+                // Use Firebase Auth email if available, otherwise use saved email
+                if (emailEl) emailEl.value = authEmail || data.email || '';
                 if (phoneEl) phoneEl.value = data.phone || '';
             } else {
-                // If no profile data exists, create default
-                const fullNameEl = document.getElementById('fullName');
-                const emailEl = document.getElementById('userEmail');
-                const phoneEl = document.getElementById('userPhone');
-
-                if (fullNameEl) fullNameEl.value = 'Admin User';
-                if (emailEl) emailEl.value = 'admin@otomono.com';
+                // If no profile data exists, use Firebase Auth email and defaults
+                if (fullNameEl) {
+                    // Try to get name from Auth displayName or email prefix
+                    if (window.auth && window.auth.currentUser) {
+                        const displayName = window.auth.currentUser.displayName ||
+                            (window.auth.currentUser.email ? window.auth.currentUser.email.split('@')[0] : '');
+                        fullNameEl.value = displayName || 'Admin User';
+                    } else {
+                        fullNameEl.value = 'Admin User';
+                    }
+                }
+                if (emailEl) emailEl.value = authEmail || 'admin@otomono.com';
                 if (phoneEl) phoneEl.value = '';
             }
 
@@ -3791,6 +3866,69 @@ class App {
 // Initialize app when DOM is ready
 let app;
 
+async function checkAuth() {
+    // Wait for Firebase Auth to be initialized
+    const maxWait = 10000;
+    const startTime = Date.now();
+
+    while (!window.auth && (Date.now() - startTime) < maxWait) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    if (!window.auth) {
+        console.warn('Firebase Auth not available, redirecting to login');
+        window.location.href = 'login.html';
+        return false;
+    }
+
+    return new Promise((resolve) => {
+        // Check current user first (synchronous check)
+        const currentUser = window.auth.currentUser;
+
+        if (currentUser) {
+            // User is authenticated
+            console.log('✓ User authenticated:', currentUser.email);
+
+            // Also set up auth state listener for changes (e.g., logout in another tab)
+            window.auth.onAuthStateChanged((user) => {
+                if (!user) {
+                    // User logged out, redirect to login
+                    console.log('✗ User logged out, redirecting to login');
+                    window.location.href = 'login.html';
+                }
+            });
+
+            resolve(true);
+            return;
+        }
+
+        // No current user, wait for auth state to be determined
+        const unsubscribe = window.auth.onAuthStateChanged((user) => {
+            unsubscribe(); // Unsubscribe after first check
+            if (user) {
+                // User is authenticated
+                console.log('✓ User authenticated:', user.email);
+                resolve(true);
+            } else {
+                // User is not authenticated, redirect to login
+                console.log('✗ User not authenticated, redirecting to login');
+                window.location.href = 'login.html';
+                resolve(false);
+            }
+        });
+
+        // Timeout fallback - if auth state doesn't change within 3 seconds, redirect
+        setTimeout(() => {
+            if (!window.auth.currentUser) {
+                console.log('✗ Auth state check timeout, redirecting to login');
+                unsubscribe();
+                window.location.href = 'login.html';
+                resolve(false);
+            }
+        }, 3000);
+    });
+}
+
 function initializeApp() {
     // Ensure DOM is ready and router is initialized
     if (document.readyState === 'loading') {
@@ -3798,20 +3936,30 @@ function initializeApp() {
         return;
     }
 
-    // Wait for router to be initialized
-    if (!window.router) {
-        setTimeout(initializeApp, 50);
-        return;
-    }
+    // Check authentication before initializing app
+    checkAuth().then((isAuthenticated) => {
+        if (!isAuthenticated) {
+            return; // Redirected to login page
+        }
 
-    try {
-        app = new App();
-        window.app = app;
-        console.log('✓ App initialized successfully');
-        console.log('✓ All event listeners attached');
-    } catch (error) {
-        console.error('✗ Error initializing app:', error);
-    }
+        // Wait for router to be initialized
+        if (!window.router) {
+            setTimeout(initializeApp, 50);
+            return;
+        }
+
+        try {
+            app = new App();
+            window.app = app;
+            console.log('✓ App initialized successfully');
+            console.log('✓ All event listeners attached');
+        } catch (error) {
+            console.error('✗ Error initializing app:', error);
+        }
+    }).catch((error) => {
+        console.error('✗ Authentication check failed:', error);
+        window.location.href = 'login.html';
+    });
 }
 
 // Start initialization
