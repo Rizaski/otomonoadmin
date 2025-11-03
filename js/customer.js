@@ -1106,6 +1106,10 @@ class CustomerApp {
                 <span>${this.orderData.customer || 'N/A'}</span>
             </div>
             <div class="order-info-item">
+                <label>Email:</label>
+                <span>${this.orderData.email || 'N/A'}</span>
+            </div>
+            <div class="order-info-item">
                 <label>Mobile:</label>
                 <span>${this.orderData.mobile || 'N/A'}</span>
             </div>

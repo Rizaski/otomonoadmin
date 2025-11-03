@@ -464,7 +464,7 @@ class App {
         });
 
         // Use event delegation for dynamically created buttons
-        document.addEventListener('click', (e) => {
+        document.addEventListener('click', async (e) => {
             const btn = e.target.closest('button[data-action]');
             if (btn) {
                 e.preventDefault();
@@ -497,7 +497,10 @@ class App {
                     case 'customer':
                         if (action === 'view') this.viewCustomer(id);
                         else if (action === 'edit') this.editCustomer(id);
-                        else if (action === 'delete') this.deleteCustomer(id);
+                        else if (action === 'send-confirmation') {
+                            const email = btn.getAttribute('data-email');
+                            await this.sendOrderConfirmationEmail(id, email);
+                        } else if (action === 'delete') this.deleteCustomer(id);
                         break;
                     case 'customer-order':
                         if (action === 'view-order') this.viewOrder(id);
@@ -784,6 +787,7 @@ class App {
             <tr>
                 <td>${order.id.substring(0, 8)}</td>
                 <td>${order.customer || 'N/A'}</td>
+                <td>${order.email || 'N/A'}</td>
                 <td>${order.mobile || 'N/A'}</td>
                 <td>${order.material || 'N/A'}</td>
                 <td><span class="status-badge status-${status}">${status.charAt(0).toUpperCase() + status.slice(1)}</span></td>
@@ -843,6 +847,11 @@ class App {
                     <td>
                         <button class="action-btn" data-action="view" data-id="${customer.id}" data-type="customer">View</button>
                         <button class="action-btn" data-action="edit" data-id="${customer.id}" data-type="customer">Edit</button>
+                        ${customer.email && customer.email !== 'N/A' ? `
+                            <button class="action-btn" data-action="send-confirmation" data-id="${customer.id}" data-email="${customer.email}" data-type="customer" title="Send Order Confirmation Email">
+                                <i class="fas fa-envelope"></i> Confirm
+                            </button>
+                        ` : ''}
                         <button class="action-btn delete" data-action="delete" data-id="${customer.id}" data-type="customer">Delete</button>
                     </td>
                 </tr>
@@ -944,12 +953,14 @@ class App {
                 if (subtitle) subtitle.textContent = 'Update order details below';
                 const customerInput = document.getElementById('orderCustomer');
                 const mobileInput = document.getElementById('orderMobile');
+                const emailInput = document.getElementById('orderEmail');
                 const materialInput = document.getElementById('orderMaterial');
                 const amountInput = document.getElementById('orderAmount');
                 const statusInput = document.getElementById('orderStatus');
 
                 if (customerInput) customerInput.value = order.customer || '';
                 if (mobileInput) mobileInput.value = order.mobile || '';
+                if (emailInput) emailInput.value = order.email || '';
                 if (materialInput) materialInput.value = order.material || '';
                 if (amountInput) amountInput.value = order.amount || '';
                 if (statusInput) statusInput.value = order.status || 'pending';
@@ -993,6 +1004,7 @@ class App {
         // Form validation
         const customer = document.getElementById('orderCustomer').value.trim();
         const mobile = document.getElementById('orderMobile').value.trim();
+        const email = document.getElementById('orderEmail') ? document.getElementById('orderEmail').value.trim() : '';
         const material = document.getElementById('orderMaterial').value;
         const amount = parseInt(document.getElementById('orderAmount').value);
 
@@ -1006,6 +1018,7 @@ class App {
         const orderData = {
             customer,
             mobile,
+            email: email || null,
             material,
             amount,
             status: document.getElementById('orderStatus').value,
@@ -1248,6 +1261,7 @@ class App {
 
             // Populate order info
             const customerElement = document.getElementById('orderDetailCustomer');
+            const emailElement = document.getElementById('orderDetailEmail');
             const mobileElement = document.getElementById('orderDetailMobile');
             const materialElement = document.getElementById('orderDetailMaterial');
             const quantityElement = document.getElementById('orderDetailQuantity');
@@ -1256,6 +1270,9 @@ class App {
 
             if (customerElement) {
                 customerElement.textContent = order.customer || 'N/A';
+            }
+            if (emailElement) {
+                emailElement.textContent = order.email || 'N/A';
             }
             if (mobileElement) {
                 mobileElement.textContent = order.mobile || 'N/A';
@@ -1441,6 +1458,200 @@ class App {
         } catch (error) {
             console.error('Error exporting jerseys:', error);
             this.showNotification('Error exporting jersey details', 'error');
+        }
+    }
+
+    async sendOrderConfirmationEmail(customerId, customerEmail) {
+        try {
+            // Get customer data
+            const customer = this.customers.find(c => c.id === customerId);
+            if (!customer) {
+                this.showNotification('Customer not found', 'error');
+                return;
+            }
+
+            // Get customer's orders
+            const customerOrders = (this.allOrders || this.orders || []).filter(order =>
+                (order.customer === customer.name || order.customerId === customerId) &&
+                (order.mobile === customer.phone || order.phone === customer.phone)
+            );
+
+            if (customerOrders.length === 0) {
+                this.showNotification('No orders found for this customer', 'warning');
+                return;
+            }
+
+            // Get the latest order
+            const latestOrder = customerOrders.sort((a, b) => {
+                const dateA = (a.date && a.date.toDate) ? a.date.toDate() : new Date(a.date || 0);
+                const dateB = (b.date && b.date.toDate) ? b.date.toDate() : new Date(b.date || 0);
+                return dateB - dateA;
+            })[0];
+
+            // Use order email if available, otherwise fall back to customer email
+            const orderEmail = latestOrder.email || customerEmail || customer.email;
+
+            if (!orderEmail || orderEmail === 'N/A') {
+                this.showNotification('No email address found for this customer. Please add email to the order.', 'warning');
+                return;
+            }
+
+            // Try using Firebase Cloud Function first (if available), otherwise try direct API
+            const useCloudFunction = true; // Set to false to try direct API
+            const BIRD_API_KEY = 'OEYmDssyk0pj1z1LPsl0lU9MAu8rhjNIzjty';
+            // Try different possible Bird API endpoints
+            const BIRD_API_URLS = [
+                'https://api.bird.com/v1/messages',
+                'https://api.app.bird.com/v1/messages',
+                'https://api.bird.com/v1/email/send',
+                'https://api.app.bird.com/v1/email/send'
+            ];
+
+            // Prepare email content
+            const customerLink = latestOrder.linkToken ?
+                `${window.location.origin}/customer.html?orderId=${latestOrder.id}&token=${latestOrder.linkToken}` :
+                null;
+
+            const emailSubject = `Order Confirmation - Order #${latestOrder.id}`;
+            const emailHtml = `
+                <html>
+                <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                        <h2 style="color: #FF003C;">Order Confirmation</h2>
+                        <p>Dear ${customer.name},</p>
+                        <p>Thank you for your order with Otomono Jersey!</p>
+                        <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                            <h3 style="margin-top: 0;">Order Details:</h3>
+                            <p><strong>Order ID:</strong> ${latestOrder.id}</p>
+                            <p><strong>Order Date:</strong> ${this.formatDate(latestOrder.date)}</p>
+                            <p><strong>Status:</strong> ${latestOrder.status}</p>
+                            <p><strong>Material:</strong> ${latestOrder.product || latestOrder.material || 'N/A'}</p>
+                            <p><strong>Quantity:</strong> ${latestOrder.amount || latestOrder.quantity || 0}</p>
+                        </div>
+                        ${customerLink ? `
+                        <p>
+                            <a href="${customerLink}" style="display: inline-block; background: #FF003C; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin: 20px 0;">
+                                View Order Details
+                            </a>
+                        </p>
+                        ` : ''}
+                        <p>Best regards,<br>Otomono Jersey Team</p>
+                    </div>
+                </body>
+                </html>
+            `;
+
+            const emailText = `
+Order Confirmation
+
+Dear ${customer.name},
+
+Thank you for your order with Otomono Jersey!
+
+Order Details:
+- Order ID: ${latestOrder.id}
+- Order Date: ${this.formatDate(latestOrder.date)}
+- Status: ${latestOrder.status}
+- Material: ${latestOrder.product || latestOrder.material || 'N/A'}
+- Quantity: ${latestOrder.amount || latestOrder.quantity || 0}
+
+${customerLink ? `You can view and manage your order details here: ${customerLink}` : ''}
+
+Best regards,
+Otomono Jersey Team
+            `.trim();
+
+            // Prepare email payload - try different possible formats
+            const emailPayloads = [{
+                    to: orderEmail,
+                    subject: emailSubject,
+                    html: emailHtml,
+                    text: emailText
+                },
+                {
+                    recipient: orderEmail,
+                    subject: emailSubject,
+                    html_body: emailHtml,
+                    text_body: emailText
+                },
+                {
+                    email: orderEmail,
+                    subject: emailSubject,
+                    body: emailHtml,
+                    body_text: emailText
+                }
+            ];
+
+            // Try Firebase Cloud Function first (recommended)
+            if (useCloudFunction && typeof firebase !== 'undefined' && firebase.functions) {
+                try {
+                    const sendEmail = firebase.functions().httpsCallable('sendOrderConfirmation');
+                    const result = await sendEmail({
+                        to: orderEmail,
+                        subject: emailSubject,
+                        html: emailHtml,
+                        text: emailText
+                    });
+
+                    if (result.data && result.data.success) {
+                        this.showNotification(`Order confirmation email sent to ${orderEmail}`, 'success');
+                        return;
+                    }
+                } catch (cloudFunctionError) {
+                    console.warn('Cloud Function not available, trying direct API:', cloudFunctionError);
+                    // Continue to try direct API
+                }
+            }
+
+            // Fallback: Try sending email with different endpoints and payload formats
+            let lastError = null;
+            for (const apiUrl of BIRD_API_URLS) {
+                for (const payload of emailPayloads) {
+                    try {
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${BIRD_API_KEY}`,
+                                'X-API-Key': BIRD_API_KEY,
+                                'X-Bird-API-Key': BIRD_API_KEY
+                            },
+                            body: JSON.stringify(payload)
+                        });
+
+                        if (response.ok) {
+                            const result = await response.json().catch(() => ({}));
+                            this.showNotification(`Order confirmation email sent to ${orderEmail}`, 'success');
+                            return;
+                        } else {
+                            const errorData = await response.json().catch(() => ({}));
+                            lastError = new Error(errorData.message || errorData.error || `HTTP error! status: ${response.status}`);
+                        }
+                    } catch (fetchError) {
+                        // CORS or network error - continue to next attempt
+                        lastError = fetchError;
+                        continue;
+                    }
+                }
+            }
+
+            // If all attempts failed, it's likely a CORS issue
+            if (lastError && (lastError.message.includes('Failed to fetch') || lastError.message.includes('CORS'))) {
+                // Fallback: Copy email details to clipboard
+                const emailContent = `To: ${orderEmail}\nSubject: ${emailSubject}\n\n${emailText}`;
+                if (navigator.clipboard) {
+                    await navigator.clipboard.writeText(emailContent);
+                    this.showNotification(`Email service unavailable (CORS error). Email content copied to clipboard. Please configure Firebase Cloud Functions for email sending.`, 'warning');
+                } else {
+                    alert(`Email Service Error:\n\nThe Bird.com API cannot be accessed directly from the browser due to CORS restrictions.\n\nEmail Details:\n\n${emailContent}\n\nPlease configure Firebase Cloud Functions to handle email sending.`);
+                }
+                throw new Error('CORS error: Bird.com API requires backend proxy or Cloud Functions. See functions/sendEmail.js for setup instructions.');
+            } else {
+                throw lastError || new Error('Failed to send email: Unknown error');
+            }
+        } catch (error) {
+            console.error('Error sending confirmation email:', error);
+            this.showNotification('Error sending email: ' + (error.text || error.message || 'Please check email service configuration'), 'error');
         }
     }
 

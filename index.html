@@ -267,6 +267,7 @@
                                 <tr>
                                     <th>Order ID</th>
                                     <th>Customer</th>
+                                    <th>Email</th>
                                     <th>Mobile</th>
                                     <th>Material</th>
                                     <th>Status</th>
@@ -277,7 +278,7 @@
                             </thead>
                             <tbody id="ordersTable">
                                 <tr>
-                                    <td colspan="8" class="no-data">No orders found</td>
+                                    <td colspan="9" class="no-data">No orders found</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -677,6 +678,13 @@
                     <div class="form-hint">Enter customer contact number</div>
                 </div>
                 <div class="form-group">
+                    <label for="orderEmail">
+                        Email Address
+                    </label>
+                    <input type="email" id="orderEmail" class="form-input" placeholder="customer@example.com">
+                    <div class="form-hint">Enter customer email address (optional but recommended for order confirmations)</div>
+                </div>
+                <div class="form-group">
                     <label for="orderMaterial">
                         Material <span class="required">*</span>
                     </label>
@@ -820,6 +828,9 @@
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
                     <div>
                         <strong>Customer:</strong> <span id="orderDetailCustomer">-</span>
+                    </div>
+                    <div>
+                        <strong>Email:</strong> <span id="orderDetailEmail">-</span>
                     </div>
                     <div>
                         <strong>Mobile:</strong> <span id="orderDetailMobile">-</span>
