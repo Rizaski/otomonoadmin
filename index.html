@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Otomono Jersey - Admin Panel</title>
+    <link rel="icon" type="image/png" href="public/favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&family=Arial:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <img src="public/logo.png" alt="Otomono Jersey" class="sidebar-logo">
+            </div>
+        </div>
+        <ul class="nav-menu">
+            <li><a href="#dashboard" class="nav-item active" data-page="dashboard">
+                    <i class="fas fa-th-large"></i>
+                    <span>Dashboard</span>
+                </a></li>
+            <li><a href="#orders" class="nav-item" data-page="orders">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>Orders</span>
+                </a></li>
+            <li><a href="#customers" class="nav-item" data-page="customers">
+                    <i class="fas fa-users"></i>
+                    <span>Customers</span>
+                </a></li>
+            <li><a href="#materials" class="nav-item" data-page="materials">
+                    <i class="fas fa-box"></i>
+                    <span>Materials</span>
+                </a></li>
+            <li><a href="#design-studio" class="nav-item" data-page="design-studio">
+                    <i class="fas fa-paint-brush"></i>
+                    <span>Design Studio</span>
+                </a></li>
+            <li><a href="#analytics" class="nav-item" data-page="analytics">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Analytics</span>
+                </a></li>
+            <li><a href="#reports" class="nav-item" data-page="reports">
+                    <i class="fas fa-file-alt"></i>
+                    <span>Reports</span>
+                </a></li>
+            <li><a href="#settings" class="nav-item" data-page="settings">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </a></li>
+        </ul>
+    </nav>
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+        <!-- Top Header -->
+        <header class="top-header">
+            <div class="header-left">
+                <button class="mobile-menu-toggle" id="mobileMenuToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="header-logo">
+                    <h2>ADMIN</h2>
+                    <p id="currentPageName">Dashboard</p>
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="icon-btn" id="refreshBtn" title="Refresh Data">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+                <div class="notification-wrapper">
+                    <button class="icon-btn" id="notificationsBtn" title="Notifications">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge" id="notificationBadge">0</span>
+                    </button>
+                    <div class="notification-dropdown" id="notificationDropdown">
+                        <div class="notification-header">
+                            <h3>Notifications</h3>
+                            <div class="notification-actions">
+                                <button class="btn-mark-all-read" id="markAllReadBtn">Mark all as read</button>
+                                <button class="btn-clear-all" id="clearAllNotificationsBtn" title="Clear All Notifications">
+                                    <i class="fas fa-trash"></i> Clear All
+                                </button>
+                            </div>
+                        </div>
+                        <div class="notification-list" id="notificationList">
+                            <div class="no-notifications">No new notifications</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="profile-wrapper">
+                    <button class="icon-btn profile-btn" id="profileBtn" title="Profile">
+                        <i class="fas fa-user"></i>
+                    </button>
+                    <div class="profile-dropdown" id="profileDropdown">
+                        <div class="profile-header">
+                            <div class="profile-avatar">
+                                <i class="fas fa-user-circle"></i>
+                            </div>
+                            <div class="profile-info">
+                                <h4 id="profileName">Admin User</h4>
+                                <p id="profileEmail">admin@otomono.com</p>
+                            </div>
+                        </div>
+                        <div class="profile-menu">
+                            <a href="#settings" class="profile-menu-item" id="settingsMenuItem" data-page="settings">
+                                <i class="fas fa-cog"></i>
+                                <span>Settings</span>
+                            </a>
+                            <a href="#" class="profile-menu-item" id="profileMenuItem">
+                                <i class="fas fa-user-edit"></i>
+                                <span>Edit Profile</span>
+                            </a>
+                            <a href="#" class="profile-menu-item" id="accountMenuItem">
+                                <i class="fas fa-key"></i>
+                                <span>Account</span>
+                            </a>
+                            <div class="profile-divider"></div>
+                            <a href="#" class="profile-menu-item" id="logoutMenuItem">
+                                <i class="fas fa-sign-out-alt"></i>
+                                <span>Logout</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Page Content Container -->
+        <div id="page-content">
+            <!-- Dashboard Page -->
+            <div id="dashboard" class="page active">
+                <h1 class="page-title">Welcome to <span class="gradient-text">Admin Panel</span></h1>
+                <p class="page-subtitle">Manage your jersey business with powerful tools and real-time insights.</p>
+
+                <div class="action-buttons">
+                    <button class="btn-primary" id="newOrderBtn">
+                        <i class="fas fa-plus"></i> New Order
+                    </button>
+                    <button class="btn-secondary" id="viewAnalyticsBtn">
+                        <i class="fas fa-chart-bar"></i> View Analytics
+                    </button>
+                </div>
+
+                <div class="kpi-cards">
+                    <div class="kpi-card">
+                        <div class="kpi-icon red">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <div class="kpi-info">
+                            <h3>Total Orders</h3>
+                            <p class="kpi-value" id="totalOrders">0</p>
+                            <p class="kpi-trend up"><i class="fas fa-arrow-up"></i> +0% from last month</p>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon blue">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="kpi-info">
+                            <h3>Active Customers</h3>
+                            <p class="kpi-value" id="activeCustomers">0</p>
+                            <p class="kpi-trend up"><i class="fas fa-arrow-up"></i> +0% from last month</p>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon orange">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="kpi-info">
+                            <h3>Pending Orders</h3>
+                            <p class="kpi-value" id="pendingOrders">0</p>
+                            <p class="kpi-trend down"><i class="fas fa-arrow-down"></i> -0 from yesterday</p>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon green">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="kpi-info">
+                            <h3>Completed Orders</h3>
+                            <p class="kpi-value" id="completedOrders">0</p>
+                            <p class="kpi-trend up"><i class="fas fa-arrow-up"></i> +0 from yesterday</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2>Recent Orders</h2>
+                        <a href="#orders" class="view-all">View All</a>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Customer</th>
+                                    <th>Product</th>
+                                    <th>Status</th>
+                                    <th>Quantity</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recentOrdersTable">
+                                <tr>
+                                    <td colspan="7" class="no-data">No orders yet</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination" id="recentOrdersPagination"></div>
+                </div>
+            </div>
+
+            <!-- Orders Page -->
+            <div id="orders" class="page">
+                <h1 class="page-title">Orders Management</h1>
+                <p class="page-subtitle">Manage customer orders and track their status</p>
+
+                <div class="filter-card">
+                    <div class="filter-row">
+                        <div class="form-group">
+                            <label>Search Orders</label>
+                            <input type="text" id="orderSearch" placeholder="Search by ID, customer, or product" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label>Status Filter</label>
+                            <select id="statusFilter" class="form-input">
+                                <option value="all">All Status</option>
+                                <option value="pending">Pending</option>
+                                <option value="processing">Processing</option>
+                                <option value="completed">Completed</option>
+                                <option value="cancelled">Cancelled</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Date Range</label>
+                            <input type="date" id="dateRange" class="form-input">
+                        </div>
+                        <button class="btn-gradient" id="filterOrdersBtn">
+                            <i class="fas fa-filter"></i> Filter Orders
+                        </button>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2>Orders List</h2>
+                        <button class="btn-gradient" id="addOrderBtn">
+                            <i class="fas fa-plus"></i> Add Order
+                        </button>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Customer</th>
+                                    <th>Mobile</th>
+                                    <th>Material</th>
+                                    <th>Status</th>
+                                    <th>Quantity</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ordersTable">
+                                <tr>
+                                    <td colspan="8" class="no-data">No orders found</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination" id="ordersPagination"></div>
+                </div>
+            </div>
+
+            <!-- Customers Page -->
+            <div id="customers" class="page">
+                <h1 class="page-title">Customers Management</h1>
+                <p class="page-subtitle">Manage customer information and track their activity</p>
+
+                <div class="kpi-cards">
+                    <div class="kpi-card">
+                        <div class="kpi-icon blue">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="kpi-info">
+                            <h3>Total Customers</h3>
+                            <p class="kpi-value" id="totalCustomers">0</p>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon green">
+                            <i class="fas fa-user-check"></i>
+                        </div>
+                        <div class="kpi-info">
+                            <h3>Active Customers</h3>
+                            <p class="kpi-value" id="activeCustomersCount">0</p>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon red">
+                            <i class="fas fa-user-plus"></i>
+                        </div>
+                        <div class="kpi-info">
+                            <h3>New This Month</h3>
+                            <p class="kpi-value" id="newCustomers">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2>Customers List</h2>
+                        <button class="btn-gradient" id="addCustomerBtn">
+                            <i class="fas fa-plus"></i> Add Customer
+                        </button>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
+                                    <th>Orders</th>
+                                    <th>Status</th>
+                                    <th>Joined</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="customersTable">
+                                <tr>
+                                    <td colspan="7" class="no-data">No customers found</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination" id="customersPagination"></div>
+                </div>
+            </div>
+
+            <!-- Materials Page -->
+            <div id="materials" class="page">
+                <h1 class="page-title">Materials Management</h1>
+                <p class="page-subtitle">Manage jersey materials and inventory</p>
+
+                <div class="kpi-cards">
+                    <div class="kpi-card">
+                        <div class="kpi-icon red">
+                            <i class="fas fa-boxes"></i>
+                        </div>
+                        <div class="kpi-info">
+                            <h3>Total Materials</h3>
+                            <p class="kpi-value" id="totalMaterials">0</p>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon green">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="kpi-info">
+                            <h3>Available</h3>
+                            <p class="kpi-value" id="availableMaterials">0</p>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon orange">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="kpi-info">
+                            <h3>Low Stock</h3>
+                            <p class="kpi-value" id="lowStock">0</p>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon red">
+                            <i class="fas fa-times-circle"></i>
+                        </div>
+                        <div class="kpi-info">
+                            <h3>Out of Stock</h3>
+                            <p class="kpi-value" id="outOfStock">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2>Materials List</h2>
+                        <button class="btn-gradient" id="addMaterialBtn">
+                            <i class="fas fa-plus"></i> Add Material
+                        </button>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Material</th>
+                                    <th>Type</th>
+                                    <th>Price</th>
+                                    <th>Stock</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="materialsTable">
+                                <tr>
+                                    <td colspan="6" class="no-data">No materials found</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination" id="materialsPagination"></div>
+                </div>
+            </div>
+
+            <!-- Design Studio Page -->
+            <div id="design-studio" class="page">
+                <div class="design-studio-container">
+                    <iframe id="designStudioFrame" src="https://otomonodesignner.vercel.app/" frameborder="0" allowfullscreen title="Otomono Design Studio">
+                    </iframe>
+                </div>
+            </div>
+
+            <!-- Analytics Page -->
+            <div id="analytics" class="page">
+                <h1 class="page-title">Analytics Dashboard</h1>
+                <p class="page-subtitle">Business insights and performance metrics</p>
+
+                <div class="kpi-cards">
+                    <div class="kpi-card">
+                        <div class="kpi-icon green">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                        <div class="kpi-info">
+                            <h3>Total Revenue</h3>
+                            <p class="kpi-value">$<span id="totalRevenue">0</span></p>
+                            <p class="kpi-trend up"><i class="fas fa-arrow-up"></i> +15% from last month</p>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon blue">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="kpi-info">
+                            <h3>Avg Order Value</h3>
+                            <p class="kpi-value">$<span id="avgOrderValue">0</span></p>
+                            <p class="kpi-trend up"><i class="fas fa-arrow-up"></i> +8% from last month</p>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon red">
+                            <i class="fas fa-percent"></i>
+                        </div>
+                        <div class="kpi-info">
+                            <h3>Conversion Rate</h3>
+                            <p class="kpi-value"><span id="conversionRate">0</span>%</p>
+                            <p class="kpi-trend up"><i class="fas fa-arrow-up"></i> +3% from last month</p>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon orange">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <div class="kpi-info">
+                            <h3>Customer Satisfaction</h3>
+                            <p class="kpi-value"><span id="customerSatisfaction">0</span>%</p>
+                            <p class="kpi-trend up"><i class="fas fa-arrow-up"></i> +5% from last month</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="charts-container">
+                    <div class="chart-card">
+                        <h3>Sales Trend (Last 7 Days)</h3>
+                        <canvas id="salesChart"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Order Status Distribution</h3>
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Monthly Revenue</h3>
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Customer Growth</h3>
+                        <canvas id="growthChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reports Page -->
+            <div id="reports" class="page">
+                <h1 class="page-title">Reports & Analytics</h1>
+                <p class="page-subtitle">Generate and download business reports</p>
+
+                <div class="filter-card">
+                    <h3>Report Filters</h3>
+                    <div class="filter-row">
+                        <div class="form-group">
+                            <label>Report Type</label>
+                            <select id="reportType" class="form-input">
+                                <option value="sales">Sales Report</option>
+                                <option value="customer">Customer Report</option>
+                                <option value="inventory">Inventory Report</option>
+                                <option value="financial">Financial Report</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Date From</label>
+                            <input type="date" id="reportDateFrom" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label>Date To</label>
+                            <input type="date" id="reportDateTo" class="form-input">
+                        </div>
+                        <button class="btn-gradient" id="generateReportBtn">
+                            <i class="fas fa-file-alt"></i> Generate Report
+                        </button>
+                    </div>
+                </div>
+
+                <div class="reports-grid">
+                    <div class="report-card">
+                        <div class="report-icon">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <h3>Sales Report</h3>
+                        <p>Order and revenue data</p>
+                        <button class="btn-gradient btn-small" data-report-type="sales">
+                            <i class="fas fa-download"></i> Generate Report
+                        </button>
+                    </div>
+                    <div class="report-card">
+                        <div class="report-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <h3>Customer Report</h3>
+                        <p>Customer analytics</p>
+                        <button class="btn-gradient btn-small" data-report-type="customer">
+                            <i class="fas fa-download"></i> Generate Report
+                        </button>
+                    </div>
+                    <div class="report-card">
+                        <div class="report-icon">
+                            <i class="fas fa-tshirt"></i>
+                        </div>
+                        <h3>Inventory Report</h3>
+                        <p>Stock and product data</p>
+                        <button class="btn-gradient btn-small" data-report-type="inventory">
+                            <i class="fas fa-download"></i> Generate Report
+                        </button>
+                    </div>
+                    <div class="report-card">
+                        <div class="report-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h3>Financial Report</h3>
+                        <p>Revenue and profit data</p>
+                        <button class="btn-gradient btn-small" data-report-type="financial">
+                            <i class="fas fa-download"></i> Generate Report
+                        </button>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2>Recent Reports</h2>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Report Name</th>
+                                <th>Type</th>
+                                <th>Generated</th>
+                                <th>Size</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportsTable">
+                            <tr>
+                                <td colspan="5" class="no-data">No reports generated yet</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Settings Page -->
+            <div id="settings" class="page">
+                <h1 class="page-title">Settings</h1>
+                <p class="page-subtitle">Manage your account settings and preferences</p>
+
+                <div class="settings-container">
+                    <div class="settings-card">
+                        <h2>Profile Settings</h2>
+                        <div class="form-group">
+                            <label>Full Name</label>
+                            <input type="text" id="fullName" placeholder="Enter your full name" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="userEmail" placeholder="Enter your email" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label>Phone</label>
+                            <input type="tel" id="userPhone" placeholder="Enter your phone number" class="form-input">
+                        </div>
+                        <button class="btn-gradient" id="updateProfileBtn">
+                            Update Profile
+                        </button>
+                    </div>
+
+                    <div class="settings-card">
+                        <h2>Security Settings</h2>
+                        <div class="form-group">
+                            <label>Current Password</label>
+                            <input type="password" id="currentPassword" placeholder="Enter current password" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label>New Password</label>
+                            <input type="password" id="newPassword" placeholder="Enter new password" class="form-input">
+                        </div>
+                        <div class="password-requirements">
+                            <p>Password requirements:</p>
+                            <ul>
+                                <li>At least 8 characters</li>
+                                <li>Contains uppercase and lowercase letters</li>
+                                <li>Contains at least one number</li>
+                            </ul>
+                        </div>
+                        <div class="form-group">
+                            <label>Confirm New Password</label>
+                            <input type="password" id="confirmPassword" placeholder="Confirm new password" class="form-input">
+                        </div>
+                        <button class="btn-gradient" id="changePasswordBtn">
+                            Change Password
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="orderModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="modalTitle">Add New Order</h2>
+            <p class="modal-subtitle">Fill in the order details below</p>
+            <form id="orderForm">
+                <div class="form-group">
+                    <label for="orderCustomer">
+                        Customer Name <span class="required">*</span>
+                    </label>
+                    <input type="text" id="orderCustomer" required class="form-input" placeholder="Enter customer name">
+                    <div class="form-hint">Enter the full name of the customer</div>
+                </div>
+                <div class="form-group">
+                    <label for="orderMobile">
+                        Mobile Number <span class="required">*</span>
+                    </label>
+                    <input type="tel" id="orderMobile" required class="form-input" placeholder="Enter mobile number">
+                    <div class="form-hint">Enter customer contact number</div>
+                </div>
+                <div class="form-group">
+                    <label for="orderMaterial">
+                        Material <span class="required">*</span>
+                    </label>
+                    <select id="orderMaterial" required class="form-input">
+                        <option value="">-- Select Material --</option>
+                    </select>
+                    <div class="form-hint">Select material from available inventory</div>
+                </div>
+                <div class="form-group">
+                    <label for="orderAmount">
+                        Quantity <span class="required">*</span>
+                    </label>
+                    <input type="number" id="orderAmount" required class="form-input" placeholder="1" min="1" step="1" value="1">
+                    <div class="form-hint">Enter order quantity (default: 1)</div>
+                </div>
+                <div class="form-group">
+                    <label for="orderStatus">
+                        Status <span class="required">*</span>
+                    </label>
+                    <select id="orderStatus" required class="form-input">
+                        <option value="pending">Pending</option>
+                        <option value="draft">Draft</option>
+                        <option value="submitted">Submitted</option>
+                        <option value="processing">Processing</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                    <div class="form-hint">Select current order status</div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" id="cancelOrderBtn">Cancel</button>
+                    <button type="submit" class="btn-gradient">
+                        <i class="fas fa-save"></i> Save Order
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="customerModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="customerModalTitle">Add New Customer</h2>
+            <p class="modal-subtitle">Enter customer information below</p>
+            <form id="customerForm">
+                <div class="form-group">
+                    <label for="customerName">
+                        Full Name <span class="required">*</span>
+                    </label>
+                    <input type="text" id="customerName" required class="form-input" placeholder="Enter customer full name">
+                    <div class="form-hint">Enter the complete name of the customer</div>
+                </div>
+                <div class="form-group">
+                    <label for="customerEmail">
+                        Email Address <span class="required">*</span>
+                    </label>
+                    <input type="email" id="customerEmail" required class="form-input" placeholder="customer@example.com">
+                    <div class="form-hint">Enter a valid email address</div>
+                </div>
+                <div class="form-group">
+                    <label for="customerPhone">
+                        Phone Number <span class="required">*</span>
+                    </label>
+                    <input type="tel" id="customerPhone" required class="form-input" placeholder="Enter phone number">
+                    <div class="form-hint">Enter customer contact number</div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" id="cancelCustomerBtn">Cancel</button>
+                    <button type="submit" class="btn-gradient">
+                        <i class="fas fa-save"></i> Save Customer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="materialModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="materialModalTitle">Add New Material</h2>
+            <p class="modal-subtitle">Enter material details below</p>
+            <form id="materialForm">
+                <div class="form-group">
+                    <label for="materialName">
+                        Material Name <span class="required">*</span>
+                    </label>
+                    <input type="text" id="materialName" required class="form-input" placeholder="Enter material name">
+                    <div class="form-hint">Enter the name of the material (e.g., Cotton, Polyester)</div>
+                </div>
+                <div class="form-group">
+                    <label for="materialType">
+                        Material Type <span class="required">*</span>
+                    </label>
+                    <select id="materialType" required class="form-input">
+                        <option value="">-- Select Type --</option>
+                        <option value="Waffle">Waffle</option>
+                        <option value="Combweb">Combweb</option>
+                        <option value="Vortex Jacquard">Vortex Jacquard</option>
+                        <option value="Mesh">Mesh</option>
+                        <option value="Iceburg">Iceburg</option>
+                        <option value="Nano Check">Nano Check</option>
+                        <option value="Closehole">Closehole</option>
+                        <option value="Drytec">Drytec</option>
+                        <option value="Wetlook">Wetlook</option>
+                        <option value="Baby Pk">Baby Pk</option>
+                        <option value="Cool Tech">Cool Tech</option>
+                        <option value="Net">Net</option>
+                    </select>
+                    <div class="form-hint">Select or enter material type</div>
+                </div>
+                <div class="form-group">
+                    <label for="materialPrice">
+                        Price ($) <span class="required">*</span>
+                    </label>
+                    <input type="number" id="materialPrice" required class="form-input" placeholder="0.00" min="0" step="0.01">
+                    <div class="form-hint">Enter price per unit</div>
+                </div>
+                <div class="form-group">
+                    <label for="materialStock">
+                        Stock Quantity <span class="required">*</span>
+                    </label>
+                    <input type="number" id="materialStock" required class="form-input" placeholder="0" min="0">
+                    <div class="form-hint">Enter available stock quantity</div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" id="cancelMaterialBtn">Cancel</button>
+                    <button type="submit" class="btn-gradient">
+                        <i class="fas fa-save"></i> Save Material
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Order Details Modal -->
+    <div id="orderDetailsModal" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <span class="close">&times;</span>
+            <h2 id="orderDetailsTitle">Order Details</h2>
+            <div id="orderInfoSection" style="margin-bottom: 20px; padding: 15px; background: rgba(255, 0, 60, 0.05); border-radius: 8px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <div>
+                        <strong>Customer:</strong> <span id="orderDetailCustomer">-</span>
+                    </div>
+                    <div>
+                        <strong>Mobile:</strong> <span id="orderDetailMobile">-</span>
+                    </div>
+                    <div>
+                        <strong>Material:</strong> <span id="orderDetailMaterial">-</span>
+                    </div>
+                    <div>
+                        <strong>Quantity:</strong> <span id="orderDetailQuantity">-</span>
+                    </div>
+                    <div>
+                        <strong>Status:</strong> <span id="orderDetailStatus">-</span>
+                    </div>
+                    <div>
+                        <strong>Date:</strong> <span id="orderDetailDate">-</span>
+                    </div>
+                </div>
+                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+                    <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 250px;">
+                            <strong>Customer Link:</strong>
+                            <div id="orderDetailLinkContainer" style="margin-top: 8px; padding: 10px; background: rgba(255, 0, 60, 0.1); border-radius: 5px; word-break: break-all; font-family: monospace; font-size: 12px; color: var(--text-color);">
+                                <span id="orderDetailLink">-</span>
+                            </div>
+                        </div>
+                        <div>
+                            <button class="btn-gradient" id="copyCustomerLinkBtn" style="padding: 10px 20px; font-size: 14px; white-space: nowrap;">
+                                <i class="fas fa-copy"></i> Copy Link
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="section-header" style="margin-bottom: 15px;">
+                <h3>Jersey Details</h3>
+                <button class="btn-gradient" id="addJerseyAdminBtn" style="padding: 8px 16px; font-size: 14px;">
+                    <i class="fas fa-plus"></i> Add Jersey
+                </button>
+            </div>
+            <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Type</th>
+                            <th>Name</th>
+                            <th>Number</th>
+                            <th>Size Category</th>
+                            <th>Size</th>
+                            <th>Sleeve</th>
+                            <th>Shorts</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminJerseyTable">
+                        <tr>
+                            <td colspan="9" class="no-data">No jersey details available</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-actions" style="margin-top: 20px;">
+                <button type="button" class="btn-secondary" id="closeOrderDetailsBtn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Jersey Form Modal -->
+    <div id="adminJerseyModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="adminJerseyModalTitle">Add Jersey Details</h2>
+            <p class="modal-subtitle">Enter jersey details below</p>
+            <form id="adminJerseyForm">
+                <div class="form-group">
+                    <label for="adminJerseyType">
+                        Jersey Type <span class="required">*</span>
+                    </label>
+                    <select id="adminJerseyType" required class="form-input">
+                        <option value="">-- Select Type --</option>
+                        <option value="Player Jersey">Player Jersey</option>
+                        <option value="keeper jersey">keeper jersey</option>
+                        <option value="official jersey">official jersey</option>
+                    </select>
+                    <div class="form-hint">Select the type of jersey</div>
+                </div>
+                <div class="form-group">
+                    <label for="adminJerseyName">
+                        Jersey Name <span class="required">*</span>
+                    </label>
+                    <input type="text" id="adminJerseyName" required class="form-input" placeholder="Enter jersey name">
+                    <div class="form-hint">Enter the jersey name</div>
+                </div>
+                <div class="form-group">
+                    <label for="adminJerseyNumber">
+                        Jersey Number <span class="required">*</span>
+                    </label>
+                    <input type="text" id="adminJerseyNumber" required class="form-input" placeholder="Enter jersey number" pattern="[0-9]*" title="Numbers only">
+                    <div class="form-hint">Enter jersey number (numbers only)</div>
+                </div>
+                <div class="form-group">
+                    <label for="adminJerseySizeCategory">
+                        Size Category <span class="required">*</span>
+                    </label>
+                    <select id="adminJerseySizeCategory" required class="form-input">
+                        <option value="">-- Select Category --</option>
+                        <option value="Adult">Adult</option>
+                        <option value="Kids">Kids</option>
+                        <option value="Muslima">Muslima</option>
+                    </select>
+                    <div class="form-hint">Select size category</div>
+                </div>
+                <div class="form-group">
+                    <label for="adminJerseySize">
+                        Size <span class="required">*</span>
+                    </label>
+                    <select id="adminJerseySize" required class="form-input">
+                        <option value="">-- Select Size --</option>
+                        <option value="XS">XS</option>
+                        <option value="S">S</option>
+                        <option value="M">M</option>
+                        <option value="L">L</option>
+                        <option value="XL">XL</option>
+                        <option value="2XL">2XL</option>
+                        <option value="3XL">3XL</option>
+                    </select>
+                    <div class="form-hint">Select jersey size</div>
+                </div>
+                <div class="form-group">
+                    <label for="adminJerseySleeve">
+                        Sleeve <span class="required">*</span>
+                    </label>
+                    <select id="adminJerseySleeve" required class="form-input">
+                        <option value="">-- Select Sleeve --</option>
+                        <option value="Short Sleeve">Short Sleeve</option>
+                        <option value="Long Sleeve">Long Sleeve</option>
+                    </select>
+                    <div class="form-hint">Select sleeve type</div>
+                </div>
+                <div class="form-group">
+                    <label for="adminJerseyShorts">
+                        Shorts <span class="required">*</span>
+                    </label>
+                    <select id="adminJerseyShorts" required class="form-input">
+                        <option value="">-- Select --</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                    </select>
+                    <div class="form-hint">Select if shorts are included</div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" id="cancelAdminJerseyBtn">Cancel</button>
+                    <button type="submit" class="btn-gradient">
+                        <i class="fas fa-save"></i> Save Jersey
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Custom Dialog/Message Box -->
+    <div id="customDialog" class="custom-dialog">
+        <div class="custom-dialog-content">
+            <div class="custom-dialog-header">
+                <div class="custom-dialog-icon" id="dialogIcon">
+                    <i class="fas fa-info-circle"></i>
+                </div>
+                <h3 class="custom-dialog-title" id="dialogTitle">Title</h3>
+            </div>
+            <p class="custom-dialog-message" id="dialogMessage">Message</p>
+            <div class="custom-dialog-buttons" id="dialogButtons">
+                <button class="custom-dialog-btn primary" id="dialogConfirm">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
+    <!-- App Scripts -->
+    <!-- Order matters: Firebase first, then Router, then App -->
+    <script src="js/firebase-config.js"></script>
+    <script src="js/routing.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>

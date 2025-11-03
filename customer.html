@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jersey Details - Otomono Jersey</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="public/favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="customer-container">
+        <header class="customer-header">
+            <div class="customer-header-content">
+                <img src="public/logo.png" alt="Otomono Jersey" class="customer-logo">
+                <h1>Jersey Details Form</h1>
+            </div>
+        </header>
+
+        <main class="customer-main">
+            <!-- Order Information Section -->
+            <div id="orderInfoSection" class="customer-section">
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2>Order Information</h2>
+                    </div>
+                    <div id="orderInfoContent" class="order-info-grid">
+                        <!-- Order details will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Size Guide Tabs -->
+            <div id="sizeGuideSection" class="customer-section">
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2>Size Guide</h2>
+                        <p class="section-subtitle">Select a category to view size measurements</p>
+                    </div>
+                    <div class="size-guide-tabs">
+                        <button class="size-tab active" data-tab="adults">Adults</button>
+                        <button class="size-tab" data-tab="kids">Kids</button>
+                        <button class="size-tab" data-tab="muslimah">Muslimah</button>
+                    </div>
+                    <div class="size-guide-content">
+                        <div id="adultsGuide" class="size-guide-panel active">
+                            <!-- Adult size guide content -->
+                        </div>
+                        <div id="kidsGuide" class="size-guide-panel">
+                            <!-- Kids size guide content -->
+                        </div>
+                        <div id="muslimahGuide" class="size-guide-panel">
+                            <!-- Muslimah size guide content -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="jerseyFormSection" class="customer-section">
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2>Enter Jersey Details</h2>
+                    </div>
+                    <form id="jerseyDetailsForm">
+                        <div class="form-group">
+                            <label for="jerseyType">
+                                Jersey Type <span class="required">*</span>
+                            </label>
+                            <select id="jerseyType" required class="form-input">
+                                <option value="">-- Select Type --</option>
+                                <option value="Player Jersey">Player Jersey</option>
+                                <option value="keeper jersey">keeper jersey</option>
+                                <option value="official jersey">official jersey</option>
+                            </select>
+                            <div class="form-hint">Select the type of jersey</div>
+                        </div>
+                        <div class="form-group">
+                            <label for="jerseyName">
+                                Jersey Name <span class="required">*</span>
+                            </label>
+                            <input type="text" id="jerseyName" required class="form-input" placeholder="Enter jersey name">
+                            <div class="form-hint">Enter the jersey name</div>
+                        </div>
+                        <div class="form-group">
+                            <label for="jerseyNumber">
+                                Jersey Number <span class="required">*</span>
+                            </label>
+                            <input type="text" id="jerseyNumber" required class="form-input" placeholder="Enter jersey number" pattern="[0-9]*" title="Numbers only">
+                            <div class="form-hint">Enter jersey number (numbers only)</div>
+                        </div>
+                        <div class="form-group">
+                            <label for="jerseySizeCategory">
+                                Size Category <span class="required">*</span>
+                            </label>
+                            <select id="jerseySizeCategory" required class="form-input">
+                                <option value="">-- Select Category --</option>
+                                <option value="Adult">Adult</option>
+                                <option value="Kids">Kids</option>
+                                <option value="Muslima">Muslima</option>
+                            </select>
+                            <div class="form-hint">Select size category</div>
+                        </div>
+                        <div class="form-group">
+                            <label for="jerseySize">
+                                Size <span class="required">*</span>
+                            </label>
+                            <select id="jerseySize" required class="form-input">
+                                <option value="">-- Select Size --</option>
+                                <option value="XS">XS</option>
+                                <option value="S">S</option>
+                                <option value="M">M</option>
+                                <option value="L">L</option>
+                                <option value="XL">XL</option>
+                                <option value="2XL">2XL</option>
+                                <option value="3XL">3XL</option>
+                            </select>
+                            <div class="form-hint">Select jersey size</div>
+                        </div>
+                        <div class="form-group">
+                            <label for="jerseySleeve">
+                                Sleeve <span class="required">*</span>
+                            </label>
+                            <select id="jerseySleeve" required class="form-input">
+                                <option value="">-- Select Sleeve --</option>
+                                <option value="Short Sleeve">Short Sleeve</option>
+                                <option value="Long Sleeve">Long Sleeve</option>
+                            </select>
+                            <div class="form-hint">Select sleeve type</div>
+                        </div>
+                        <div class="form-group">
+                            <label for="jerseyShorts">
+                                Shorts <span class="required">*</span>
+                            </label>
+                            <select id="jerseyShorts" required class="form-input">
+                                <option value="">-- Select --</option>
+                                <option value="Yes">Yes</option>
+                                <option value="No">No</option>
+                            </select>
+                            <div class="form-hint">Select if shorts are included</div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn-secondary" id="addAnotherBtn">
+                                <i class="fas fa-plus"></i> Add Another Jersey
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Preview Table for Local Entries -->
+                    <div id="previewTableContainer" style="display: none; margin-top: 30px;">
+                        <div class="section-header" style="margin-bottom: 15px;">
+                            <h3>Jersey Entries Added</h3>
+                            <p class="section-subtitle">Review your jersey entries before finalizing</p>
+                        </div>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Type</th>
+                                        <th>Name</th>
+                                        <th>Number</th>
+                                        <th>Size Category</th>
+                                        <th>Size</th>
+                                        <th>Sleeve</th>
+                                        <th>Shorts</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="previewTable">
+                                    <!-- Preview entries will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="form-actions" style="margin-top: 20px; justify-content: center;">
+                            <button type="button" class="btn-gradient" id="submitDetailsBtn">
+                                <i class="fas fa-paper-plane"></i> Submit Details to Otomono Admin
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="reviewSection" class="customer-section" style="display: none;">
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2>Review Jersey Details</h2>
+                        <p class="section-subtitle">Review and edit your jersey entries before submission</p>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Type</th>
+                                    <th>Name</th>
+                                    <th>Number</th>
+                                    <th>Size Category</th>
+                                    <th>Size</th>
+                                    <th>Sleeve</th>
+                                    <th>Shorts</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="jerseyReviewTable">
+                                <!-- Jersey entries will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="form-actions" style="margin-top: 20px;">
+                        <button type="button" class="btn-secondary" id="addMoreBtn">
+                            <i class="fas fa-plus"></i> Add More Jersey
+                        </button>
+                        <button type="button" class="btn-gradient" id="submitOrderBtn">
+                            <i class="fas fa-paper-plane"></i> Submit Order
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="submittedSection" class="customer-section" style="display: none;">
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2>Jersey Entries Added</h2>
+                        <p class="section-subtitle">Your jersey details have been submitted successfully</p>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Type</th>
+                                    <th>Name</th>
+                                    <th>Number</th>
+                                    <th>Size Category</th>
+                                    <th>Size</th>
+                                    <th>Sleeve</th>
+                                    <th>Shorts</th>
+                                </tr>
+                            </thead>
+                            <tbody id="submittedJerseyTable">
+                                <!-- Submitted jersey entries will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Edit Jersey Modal -->
+    <div id="editJerseyModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Edit Jersey Details</h2>
+            <form id="editJerseyForm">
+                <div class="form-group">
+                    <label for="editJerseyType">
+                        Jersey Type <span class="required">*</span>
+                    </label>
+                    <select id="editJerseyType" required class="form-input">
+                        <option value="">-- Select Type --</option>
+                        <option value="Player Jersey">Player Jersey</option>
+                        <option value="Keeper Jersey">Keeper Jersey</option>
+                        <option value="Official Jersey">Official Jersey</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="editJerseyName">
+                        Jersey Name <span class="required">*</span>
+                    </label>
+                    <input type="text" id="editJerseyName" required class="form-input" placeholder="Enter jersey name">
+                </div>
+                <div class="form-group">
+                    <label for="editJerseyNumber">
+                        Jersey Number <span class="required">*</span>
+                    </label>
+                    <input type="text" id="editJerseyNumber" required class="form-input" placeholder="Enter jersey number" pattern="[0-9]*" title="Numbers only">
+                </div>
+                <div class="form-group">
+                    <label for="editJerseySizeCategory">
+                        Size Category <span class="required">*</span>
+                    </label>
+                    <select id="editJerseySizeCategory" required class="form-input">
+                        <option value="">-- Select Category --</option>
+                        <option value="Adult">Adult</option>
+                        <option value="Kids">Kids</option>
+                        <option value="Muslima">Muslima</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="editJerseySize">
+                        Size <span class="required">*</span>
+                    </label>
+                    <select id="editJerseySize" required class="form-input">
+                        <option value="">-- Select Size --</option>
+                        <option value="XS">XS</option>
+                        <option value="S">S</option>
+                        <option value="M">M</option>
+                        <option value="L">L</option>
+                        <option value="XL">XL</option>
+                        <option value="2XL">2XL</option>
+                        <option value="3XL">3XL</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="editJerseySleeve">
+                        Sleeve <span class="required">*</span>
+                    </label>
+                    <select id="editJerseySleeve" required class="form-input">
+                        <option value="">-- Select Sleeve --</option>
+                        <option value="Short Sleeve">Short Sleeve</option>
+                        <option value="Long Sleeve">Long Sleeve</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="editJerseyShorts">
+                        Shorts <span class="required">*</span>
+                    </label>
+                    <select id="editJerseyShorts" required class="form-input">
+                        <option value="">-- Select --</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" id="cancelEditBtn">Cancel</button>
+                    <button type="submit" class="btn-gradient">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Custom Dialog for Confirmations and Alerts -->
+    <div id="customDialog" class="custom-dialog">
+        <div class="custom-dialog-content">
+            <div class="custom-dialog-header">
+                <div class="custom-dialog-icon" id="dialogIcon">
+                    <i class="fas fa-info-circle"></i>
+                </div>
+                <h3 class="custom-dialog-title" id="dialogTitle">Title</h3>
+            </div>
+            <p class="custom-dialog-message" id="dialogMessage">Message</p>
+            <div class="custom-dialog-buttons" id="dialogButtons">
+                <button class="custom-dialog-btn primary" id="dialogConfirm">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="js/firebase-config.js"></script>
+    <script src="js/customer.js"></script>
+</body>
+
+</html>
