@@ -211,8 +211,8 @@ class App {
                                     try {
                                         new Notification(notifData.title || 'New Notification', {
                                             body: notifData.message || '',
-                                            icon: '/public/logo.png',
-                                            badge: '/public/logo.png',
+                                            icon: 'Public/logo.png',
+                                            badge: 'Public/logo.png',
                                             tag: `notification-${change.doc.id}`
                                         });
                                     } catch (err) {
