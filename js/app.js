@@ -732,20 +732,26 @@ class App {
         const endIndex = startIndex + pagination.pageSize;
         const paginatedOrders = this.orders.slice(startIndex, endIndex);
 
-        tbody.innerHTML = paginatedOrders.map(order => `
+        // Always show quantity column, but set to 0 for pending/draft orders
+        tbody.innerHTML = paginatedOrders.map(order => {
+            const status = order.status || 'pending';
+            // For pending/draft orders, show 0, otherwise show actual quantity
+            const quantity = (status === 'pending' || status === 'draft') ? 0 : parseInt(order.amount || 0);
+            return `
             <tr>
                 <td>${order.id.substring(0, 8)}</td>
                 <td>${order.customer || 'N/A'}</td>
                 <td>${order.product || 'N/A'}</td>
-                <td><span class="status-badge status-${order.status || 'pending'}">${(order.status || 'pending').charAt(0).toUpperCase() + (order.status || 'pending').slice(1)}</span></td>
-                <td>${parseInt(order.amount || 0)}</td>
+                <td><span class="status-badge status-${status}">${status.charAt(0).toUpperCase() + status.slice(1)}</span></td>
+                <td>${quantity}</td>
                 <td>${this.formatDate(order.date)}</td>
                 <td>
                     <button class="action-btn" data-action="view" data-id="${order.id}" data-type="order">View</button>
                     <button class="action-btn delete" data-action="delete" data-id="${order.id}" data-type="order">Delete</button>
                 </td>
             </tr>
-        `).join('');
+        `;
+        }).join('');
 
         this.renderPagination('recentOrders', this.orders, 'recentOrdersPagination');
     }
@@ -768,21 +774,27 @@ class App {
         const endIndex = startIndex + pagination.pageSize;
         const paginatedOrders = orders.slice(startIndex, endIndex);
 
-        tbody.innerHTML = paginatedOrders.map(order => `
+        // Always show quantity column, but set to 0 for pending/draft orders
+        tbody.innerHTML = paginatedOrders.map(order => {
+            const status = order.status || 'pending';
+            // For pending/draft orders, show 0, otherwise show actual quantity
+            const quantity = (status === 'pending' || status === 'draft') ? 0 : parseInt(order.amount || 0);
+            return `
             <tr>
                 <td>${order.id.substring(0, 8)}</td>
                 <td>${order.customer || 'N/A'}</td>
                 <td>${order.mobile || 'N/A'}</td>
                 <td>${order.material || 'N/A'}</td>
-                <td><span class="status-badge status-${order.status || 'pending'}">${(order.status || 'pending').charAt(0).toUpperCase() + (order.status || 'pending').slice(1)}</span></td>
-                <td>${parseInt(order.amount || 0)}</td>
+                <td><span class="status-badge status-${status}">${status.charAt(0).toUpperCase() + status.slice(1)}</span></td>
+                <td>${quantity}</td>
                 <td>${this.formatDate(order.date)}</td>
                 <td>
                     <button class="action-btn" data-action="edit" data-id="${order.id}" data-type="order">Edit</button>
                     <button class="action-btn delete" data-action="delete" data-id="${order.id}" data-type="order">Delete</button>
                 </td>
             </tr>
-        `).join('');
+        `;
+        }).join('');
 
         this.renderPagination('orders', orders, 'ordersPagination');
     }
@@ -1252,7 +1264,15 @@ class App {
                 materialElement.textContent = order.material || order.product || order.materialName || 'N/A';
             }
             if (quantityElement) {
-                quantityElement.textContent = order.amount || order.quantity || 0;
+                const status = order.status || 'pending';
+                // For pending/draft orders, show 0, otherwise show actual quantity
+                const quantity = (status === 'pending' || status === 'draft') ? 0 : (order.amount || order.quantity || 0);
+                // Always show quantity div
+                const quantityDiv = quantityElement.closest('div');
+                if (quantityDiv) {
+                    quantityDiv.style.display = '';
+                }
+                quantityElement.textContent = quantity;
             }
             if (statusElement) {
                 const status = order.status || 'pending';
@@ -1536,7 +1556,22 @@ class App {
             // Update the displayed quantity in the modal
             const quantityElement = document.getElementById('orderDetailQuantity');
             if (quantityElement) {
-                quantityElement.textContent = jerseyCount;
+                // Get order status to determine quantity value
+                const orderDoc = await db.collection('orders').doc(orderId).get();
+                if (orderDoc.exists) {
+                    const orderData = orderDoc.data();
+                    const status = orderData.status || 'pending';
+                    // For pending/draft orders, show 0, otherwise show actual jersey count
+                    const quantity = (status === 'pending' || status === 'draft') ? 0 : jerseyCount;
+                    // Always show quantity div
+                    const quantityDiv = quantityElement.closest('div');
+                    if (quantityDiv) {
+                        quantityDiv.style.display = '';
+                    }
+                    quantityElement.textContent = quantity;
+                } else {
+                    quantityElement.textContent = jerseyCount;
+                }
             }
 
             // Real-time listeners will automatically update the UI

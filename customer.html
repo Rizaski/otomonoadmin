@@ -24,7 +24,7 @@
 
         <main class="customer-main">
             <!-- Order Information Section -->
-            <div id="orderInfoSection" class="customer-section">
+            <div id="orderInfoSection" class="customer-section" style="display: block;">
                 <div class="section-card">
                     <div class="section-header">
                         <h2>Order Information</h2>
@@ -36,7 +36,7 @@
             </div>
 
             <!-- Size Guide Tabs -->
-            <div id="sizeGuideSection" class="customer-section">
+            <div id="sizeGuideSection" class="customer-section" style="display: block;">
                 <div class="section-card">
                     <div class="section-header">
                         <h2>Size Guide</h2>
@@ -61,17 +61,22 @@
                 </div>
             </div>
 
-            <div id="jerseyFormSection" class="customer-section">
+            <div id="jerseyFormSection" class="customer-section" style="display: block;">
                 <div class="section-card">
                     <div class="section-header">
                         <h2>Enter Jersey Details</h2>
                     </div>
-                    <form id="jerseyDetailsForm">
+                    <div class="form-actions" id="enableFormSection" style="margin-bottom: 20px; display: block;">
+                        <button type="button" class="btn-gradient" id="enableJerseyFormBtn">
+                            <i class="fas fa-plus"></i> Add Jersey
+                        </button>
+                    </div>
+                    <form id="jerseyDetailsForm" style="display: none;">
                         <div class="form-group">
                             <label for="jerseyType">
                                 Jersey Type <span class="required">*</span>
                             </label>
-                            <select id="jerseyType" required class="form-input">
+                            <select id="jerseyType" required class="form-input" disabled>
                                 <option value="">-- Select Type --</option>
                                 <option value="Player Jersey">Player Jersey</option>
                                 <option value="keeper jersey">keeper jersey</option>
@@ -83,21 +88,21 @@
                             <label for="jerseyName">
                                 Jersey Name <span class="required">*</span>
                             </label>
-                            <input type="text" id="jerseyName" required class="form-input" placeholder="Enter jersey name">
+                            <input type="text" id="jerseyName" required class="form-input" placeholder="Enter jersey name" disabled>
                             <div class="form-hint">Enter the jersey name</div>
                         </div>
                         <div class="form-group">
                             <label for="jerseyNumber">
                                 Jersey Number <span class="required">*</span>
                             </label>
-                            <input type="text" id="jerseyNumber" required class="form-input" placeholder="Enter jersey number" pattern="[0-9]*" title="Numbers only">
+                            <input type="text" id="jerseyNumber" required class="form-input" placeholder="Enter jersey number" pattern="[0-9]*" title="Numbers only" disabled>
                             <div class="form-hint">Enter jersey number (numbers only)</div>
                         </div>
                         <div class="form-group">
                             <label for="jerseySizeCategory">
                                 Size Category <span class="required">*</span>
                             </label>
-                            <select id="jerseySizeCategory" required class="form-input">
+                            <select id="jerseySizeCategory" required class="form-input" disabled>
                                 <option value="">-- Select Category --</option>
                                 <option value="Adult">Adult</option>
                                 <option value="Kids">Kids</option>
@@ -109,7 +114,7 @@
                             <label for="jerseySize">
                                 Size <span class="required">*</span>
                             </label>
-                            <select id="jerseySize" required class="form-input">
+                            <select id="jerseySize" required class="form-input" disabled>
                                 <option value="">-- Select Size --</option>
                                 <option value="XS">XS</option>
                                 <option value="S">S</option>
@@ -125,7 +130,7 @@
                             <label for="jerseySleeve">
                                 Sleeve <span class="required">*</span>
                             </label>
-                            <select id="jerseySleeve" required class="form-input">
+                            <select id="jerseySleeve" required class="form-input" disabled>
                                 <option value="">-- Select Sleeve --</option>
                                 <option value="Short Sleeve">Short Sleeve</option>
                                 <option value="Long Sleeve">Long Sleeve</option>
@@ -136,15 +141,22 @@
                             <label for="jerseyShorts">
                                 Shorts <span class="required">*</span>
                             </label>
-                            <select id="jerseyShorts" required class="form-input">
+                            <select id="jerseyShorts" required class="form-input" disabled>
                                 <option value="">-- Select --</option>
                                 <option value="Yes">Yes</option>
                                 <option value="No">No</option>
                             </select>
                             <div class="form-hint">Select if shorts are included</div>
                         </div>
+                        <div class="form-group" id="jerseyQuantityGroup" style="display: none;">
+                            <label for="jerseyQuantity">
+                                Quantity <span class="required">*</span>
+                            </label>
+                            <input type="number" id="jerseyQuantity" required class="form-input" placeholder="1" min="1" step="1" value="1" disabled>
+                            <div class="form-hint">Number of jerseys with these details</div>
+                        </div>
                         <div class="form-actions">
-                            <button type="button" class="btn-secondary" id="addAnotherBtn">
+                            <button type="button" class="btn-secondary" id="addAnotherBtn" disabled>
                                 <i class="fas fa-plus"></i> Add Another Jersey
                             </button>
                         </div>

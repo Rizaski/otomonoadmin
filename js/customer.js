@@ -10,14 +10,8 @@ class CustomerApp {
         this.isEditingLocal = false;
         this.isSubmitted = false;
         this.orderStatusListener = null;
-
-        // Wait for Firebase to be ready before initializing
-        this.waitForFirebase().then(() => {
-            this.init();
-        }).catch(err => {
-            console.error('Firebase initialization failed:', err);
-            this.showError('Firebase not initialized. Please refresh the page.');
-        });
+        this.formEnabled = false;
+        this._initialized = false;
     }
 
     async waitForFirebase() {
@@ -37,32 +31,39 @@ class CustomerApp {
     }
 
     async init() {
-        // Get order ID and token from URL
-        const urlParams = new URLSearchParams(window.location.search);
-        this.orderId = urlParams.get('orderId');
-        this.token = urlParams.get('token');
+        try {
+            console.log('CustomerApp.init() started');
 
-        // Initialize size guide immediately - it's always needed (doesn't depend on order data)
-        // Initialize right away since DOM should be ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => {
-                this.initializeSizeGuide();
-            });
-        } else {
-            this.initializeSizeGuide();
+            // Get order ID and token from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            this.orderId = urlParams.get('orderId');
+            this.token = urlParams.get('token');
+
+            console.log('Order ID:', this.orderId, 'Token:', this.token ? 'Present' : 'Missing');
+
+            if (!this.orderId || !this.token) {
+                console.error('Missing orderId or token');
+                this.showError('Invalid link. Please use the link provided by the administrator.');
+                return;
+            }
+
+            // Verify order exists and token matches
+            await this.loadOrderData();
+
+            // Setup event listeners first
+            this.setupEventListeners();
+            this.setupDynamicEventListeners();
+
+            // Load from local storage if available (after DOM is ready and listeners are set up)
+            setTimeout(() => {
+                this.loadFromLocalStorage();
+            }, 100);
+
+            console.log('CustomerApp.init() completed successfully');
+        } catch (error) {
+            console.error('Error in CustomerApp.init():', error);
+            this.showError('Error initializing application: ' + error.message);
         }
-
-        if (!this.orderId || !this.token) {
-            this.showError('Invalid link. Please use the link provided by the administrator.');
-            return;
-        }
-
-        // Verify order exists and token matches
-        await this.loadOrderData();
-
-        // Setup event listeners
-        this.setupEventListeners();
-        this.setupDynamicEventListeners();
     }
 
     async loadOrderData() {
@@ -97,19 +98,38 @@ class CustomerApp {
             const orderInfoSection = document.getElementById('orderInfoSection');
             if (orderInfoSection) {
                 orderInfoSection.style.display = 'block';
+                orderInfoSection.style.visibility = 'visible';
             }
 
-            // Render order information immediately
-            // Size guide is already initialized in init()
+            // Ensure size guide section is visible (hide if submitted)
+            const sizeGuideSection = document.getElementById('sizeGuideSection');
+            if (sizeGuideSection) {
+                if (this.orderData.status === 'submitted') {
+                    sizeGuideSection.style.display = 'none';
+                } else {
+                    sizeGuideSection.style.display = 'block';
+                    sizeGuideSection.style.visibility = 'visible';
+                }
+            }
+
+            // Render order information
             this.renderOrderInfo();
 
-            // Also try after a short delay as fallback
+            // Retry rendering after a short delay if content is empty
             setTimeout(() => {
-                if (document.getElementById('orderInfoContent') && !document.getElementById('orderInfoContent').innerHTML.trim()) {
+                const orderInfoContent = document.getElementById('orderInfoContent');
+                if (orderInfoContent && (!orderInfoContent.innerHTML || orderInfoContent.innerHTML.trim() === '')) {
                     console.log('Retrying renderOrderInfo...');
                     this.renderOrderInfo();
                 }
             }, 200);
+
+            // Initialize size guide if not submitted
+            if (this.orderData.status !== 'submitted') {
+                setTimeout(() => {
+                    this.initializeSizeGuide();
+                }, 100);
+            }
 
             // Check order status
             if (this.orderData.status === 'submitted') {
@@ -145,6 +165,10 @@ class CustomerApp {
             // If jerseys exist, show review section
             if (this.jerseys.length > 0) {
                 this.showReviewSection();
+            } else {
+                // Show form section but keep form disabled until button is clicked
+                document.getElementById('jerseyFormSection').style.display = 'block';
+                document.getElementById('reviewSection').style.display = 'none';
             }
 
             // Set up real-time listener for status changes (for pending orders too)
@@ -178,6 +202,41 @@ class CustomerApp {
     }
 
     setupEventListeners() {
+        console.log('Setting up event listeners...');
+
+        // Enable Jersey Form button - retry if not found
+        const attachEnableButtonListener = () => {
+            const enableFormBtn = document.getElementById('enableJerseyFormBtn');
+            if (enableFormBtn) {
+                // Remove any existing listeners by cloning
+                const clonedBtn = enableFormBtn.cloneNode(true);
+                enableFormBtn.parentNode.replaceChild(clonedBtn, enableFormBtn);
+
+                // Add click listener
+                clonedBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Enable Jersey Form button clicked');
+                    this.enableJerseyForm();
+                });
+
+                console.log('Enable Jersey Form button listener attached successfully');
+                return true;
+            }
+            return false;
+        };
+
+        // Try to attach immediately
+        if (!attachEnableButtonListener()) {
+            console.warn('Enable Jersey Form button not found, retrying...');
+            // Retry after a short delay
+            setTimeout(() => {
+                if (!attachEnableButtonListener()) {
+                    console.error('Enable Jersey Form button still not found after retry');
+                }
+            }, 300);
+        }
+
         // Form submission
         const form = document.getElementById('jerseyDetailsForm');
         if (form) {
@@ -310,17 +369,40 @@ class CustomerApp {
         const jerseyData = this.getFormData();
         if (!jerseyData) return; // Validation failed
 
-        // Add to local array
-        this.localJerseys.push(jerseyData);
+        // Handle quantity - if quantity > 1, add multiple entries
+        const quantity = jerseyData.quantity || 1;
+        delete jerseyData.quantity; // Remove quantity from jersey data
+
+        // Add multiple jerseys if quantity > 1
+        for (let i = 0; i < quantity; i++) {
+            this.localJerseys.push({
+                ...jerseyData
+            });
+        }
+
+        // Save to local storage
+        this.saveToLocalStorage();
 
         // Update preview table
         this.renderPreviewTable();
 
-        // Reset form
+        // Show quantity field after first jersey is added
+        if (this.localJerseys.length > 0) {
+            const quantityGroup = document.getElementById('jerseyQuantityGroup');
+            if (quantityGroup) {
+                quantityGroup.style.display = 'block';
+            }
+        }
+
+        // Reset form (but keep quantity field visible)
         document.getElementById('jerseyDetailsForm').reset();
+        const quantityField = document.getElementById('jerseyQuantity');
+        if (quantityField) {
+            quantityField.value = '1';
+        }
 
         // Show success
-        this.showSuccess('Jersey added! You can add another jersey or submit your details.');
+        this.showSuccess(`Jersey added! (${quantity} item(s)) You can add another jersey or submit your details.`);
     }
 
     getFormData() {
@@ -333,6 +415,16 @@ class CustomerApp {
             sleeve: document.getElementById('jerseySleeve').value,
             shorts: document.getElementById('jerseyShorts').value
         };
+
+        // Get quantity if field is visible
+        const quantityField = document.getElementById('jerseyQuantity');
+        const quantityGroup = document.getElementById('jerseyQuantityGroup');
+        if (quantityGroup && quantityGroup.style.display !== 'none' && quantityField) {
+            const quantity = parseInt(quantityField.value) || 1;
+            jerseyData.quantity = quantity;
+        } else {
+            jerseyData.quantity = 1; // Default to 1
+        }
 
         // Validation
         if (!jerseyData.type || !jerseyData.name || !jerseyData.number || !jerseyData.sizeCategory || !jerseyData.size || !jerseyData.sleeve || !jerseyData.shorts) {
@@ -353,14 +445,37 @@ class CustomerApp {
         const jerseyData = this.getFormData();
         if (!jerseyData) return; // Validation failed
 
-        // Add to local array
-        this.localJerseys.push(jerseyData);
+        // Handle quantity - if quantity > 1, add multiple entries
+        const quantity = jerseyData.quantity || 1;
+        delete jerseyData.quantity; // Remove quantity from jersey data
+
+        // Add multiple jerseys if quantity > 1
+        for (let i = 0; i < quantity; i++) {
+            this.localJerseys.push({
+                ...jerseyData
+            });
+        }
+
+        // Save to local storage
+        this.saveToLocalStorage();
 
         // Update preview table
         this.renderPreviewTable();
 
-        // Reset form
+        // Show quantity field after first jersey is added
+        if (this.localJerseys.length > 0) {
+            const quantityGroup = document.getElementById('jerseyQuantityGroup');
+            if (quantityGroup) {
+                quantityGroup.style.display = 'block';
+            }
+        }
+
+        // Reset form (but keep quantity field visible)
         document.getElementById('jerseyDetailsForm').reset();
+        const quantityField = document.getElementById('jerseyQuantity');
+        if (quantityField) {
+            quantityField.value = '1';
+        }
 
         // Focus on first field
         const jerseyType = document.getElementById('jerseyType');
@@ -368,7 +483,7 @@ class CustomerApp {
             jerseyType.focus();
         }
 
-        this.showSuccess('Jersey added! You can add another or click "Save Jersey Details" to review.');
+        this.showSuccess(`Jersey added! (${quantity} item(s)) You can add another or click "Save Jersey Details" to review.`);
     }
 
     renderPreviewTable() {
@@ -409,15 +524,99 @@ class CustomerApp {
         `).join('');
     }
 
-    showFormSection() {
-        document.getElementById('reviewSection').style.display = 'none';
-        document.getElementById('jerseyFormSection').style.display = 'block';
-        document.getElementById('jerseyDetailsForm').reset();
+    enableJerseyForm() {
+        console.log('enableJerseyForm() called');
+        const form = document.getElementById('jerseyDetailsForm');
+        const enableSection = document.getElementById('enableFormSection');
+
+        if (!form) {
+            console.error('Jersey form not found');
+            return;
+        }
+
+        if (!enableSection) {
+            console.error('Enable form section not found');
+        }
+
+        form.style.display = 'block';
+
+        // Enable all form fields
+        const inputs = form.querySelectorAll('input, select');
+        inputs.forEach(input => {
+            input.disabled = false;
+        });
+
+        // Enable buttons
+        const buttons = form.querySelectorAll('button');
+        buttons.forEach(button => {
+            button.disabled = false;
+        });
+
+        // Add auto-save on input change (exclude buttons)
+        inputs.forEach(input => {
+            // Remove existing listeners to avoid duplicates
+            const newInput = input.cloneNode(true);
+            input.parentNode.replaceChild(newInput, input);
+
+            newInput.addEventListener('change', () => {
+                this.saveToLocalStorage();
+            });
+            newInput.addEventListener('input', () => {
+                // Debounce auto-save on input
+                clearTimeout(this._saveTimeout);
+                this._saveTimeout = setTimeout(() => {
+                    this.saveToLocalStorage();
+                }, 500);
+            });
+        });
+
+        if (enableSection) {
+            enableSection.style.display = 'none';
+        }
+
+        this.formEnabled = true;
 
         // Focus on first field
         const jerseyType = document.getElementById('jerseyType');
         if (jerseyType) {
             jerseyType.focus();
+        }
+
+        // Load form data from local storage if available
+        this.loadFormDataFromStorage();
+
+        console.log('Form enabled successfully');
+    }
+
+    showFormSection() {
+        document.getElementById('reviewSection').style.display = 'none';
+        document.getElementById('jerseyFormSection').style.display = 'block';
+
+        // Enable form if it was previously enabled
+        if (this.formEnabled) {
+            const form = document.getElementById('jerseyDetailsForm');
+            if (form) {
+                form.style.display = 'block';
+                const enableSection = document.getElementById('enableFormSection');
+                if (enableSection) {
+                    enableSection.style.display = 'none';
+                }
+            }
+        } else {
+            const form = document.getElementById('jerseyDetailsForm');
+            if (form) {
+                form.style.display = 'none';
+            }
+        }
+
+        document.getElementById('jerseyDetailsForm').reset();
+
+        // Focus on first field if form is enabled
+        if (this.formEnabled) {
+            const jerseyType = document.getElementById('jerseyType');
+            if (jerseyType) {
+                jerseyType.focus();
+            }
         }
     }
 
@@ -512,7 +711,6 @@ class CustomerApp {
             editModal.style.display = 'flex';
         }
     }
-
     async deletePreviewJersey(index) {
         const confirmed = await this.showConfirm(
             'Delete Jersey Entry',
@@ -522,8 +720,8 @@ class CustomerApp {
         if (!confirmed) {
             return;
         }
-
         this.localJerseys.splice(index, 1);
+        this.saveToLocalStorage();
         this.renderPreviewTable();
         this.renderJerseysTable(this.localJerseys);
         this.showSuccess('Jersey entry deleted successfully!');
@@ -560,6 +758,7 @@ class CustomerApp {
             // If editing local jersey (not yet saved to Firebase)
             if (this.isEditingLocal) {
                 this.localJerseys[this.editingIndex] = updatedData;
+                this.saveToLocalStorage();
                 this.renderPreviewTable();
                 this.renderJerseysTable(this.localJerseys);
                 this.isEditingLocal = false;
@@ -613,6 +812,7 @@ class CustomerApp {
                 return;
             }
             this.localJerseys.splice(index, 1);
+            this.saveToLocalStorage();
             this.renderPreviewTable();
             this.renderJerseysTable(this.localJerseys);
             this.showSuccess('Jersey entry deleted successfully!');
@@ -697,6 +897,9 @@ class CustomerApp {
                 // Move local jerseys to Firebase jerseys array
                 this.jerseys = [...this.localJerseys];
                 this.localJerseys = [];
+
+                // Clear local storage after successful submission
+                this.clearLocalStorage();
             }
 
             // Get ACTUAL jersey count from Firebase (in case there are existing jerseys)
@@ -938,17 +1141,28 @@ class CustomerApp {
         // Wait for DOM if needed
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => {
-                this.initializeSizeGuide();
+                setTimeout(() => this.initializeSizeGuide(), 100);
             });
             return;
+        }
+
+        // Ensure size guide section is visible
+        const sizeGuideSection = document.getElementById('sizeGuideSection');
+        if (sizeGuideSection && (!this.orderData || this.orderData.status !== 'submitted')) {
+            sizeGuideSection.style.display = 'block';
+            sizeGuideSection.style.visibility = 'visible';
         }
 
         // Adults Size Guide
         const adultsGuide = document.getElementById('adultsGuide');
         if (!adultsGuide) {
-            console.error('Adults guide element not found');
+            console.error('Adults guide element not found, retrying...');
             // Retry after a short delay
-            setTimeout(() => this.initializeSizeGuide(), 100);
+            setTimeout(() => {
+                if (document.getElementById('adultsGuide')) {
+                    this.initializeSizeGuide();
+                }
+            }, 200);
             return;
         }
 
@@ -1371,6 +1585,129 @@ class CustomerApp {
         });
     }
 
+    // Local Storage Persistence
+    getStorageKey() {
+        return `jersey_data_${this.orderId}_${this.token}`;
+    }
+
+    saveToLocalStorage() {
+        try {
+            const storageKey = this.getStorageKey();
+            const dataToSave = {
+                localJerseys: this.localJerseys,
+                formData: this.getCurrentFormData(),
+                formEnabled: this.formEnabled,
+                timestamp: Date.now()
+            };
+            localStorage.setItem(storageKey, JSON.stringify(dataToSave));
+        } catch (error) {
+            console.error('Error saving to local storage:', error);
+        }
+    }
+
+    loadFromLocalStorage() {
+        try {
+            // Make sure orderId and token are available
+            if (!this.orderId || !this.token) {
+                return;
+            }
+
+            const storageKey = this.getStorageKey();
+            const savedData = localStorage.getItem(storageKey);
+
+            if (savedData) {
+                const data = JSON.parse(savedData);
+
+                // Restore local jerseys
+                if (data.localJerseys && Array.isArray(data.localJerseys)) {
+                    this.localJerseys = data.localJerseys;
+
+                    // Restore preview table if there are jerseys
+                    if (this.localJerseys.length > 0) {
+                        this.renderPreviewTable();
+
+                        // Show quantity field if jerseys exist
+                        const quantityGroup = document.getElementById('jerseyQuantityGroup');
+                        if (quantityGroup) {
+                            quantityGroup.style.display = 'block';
+                        }
+
+                        // Enable form and hide enable button if form was enabled
+                        if (data.formEnabled) {
+                            // Make sure form exists before enabling
+                            const form = document.getElementById('jerseyDetailsForm');
+                            if (form) {
+                                this.enableJerseyForm();
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error loading from local storage:', error);
+        }
+    }
+
+    getCurrentFormData() {
+        try {
+            const jerseyTypeEl = document.getElementById('jerseyType');
+            const jerseyNameEl = document.getElementById('jerseyName');
+            const jerseyNumberEl = document.getElementById('jerseyNumber');
+            const jerseySizeCategoryEl = document.getElementById('jerseySizeCategory');
+            const jerseySizeEl = document.getElementById('jerseySize');
+            const jerseySleeveEl = document.getElementById('jerseySleeve');
+            const jerseyShortsEl = document.getElementById('jerseyShorts');
+            const jerseyQuantityEl = document.getElementById('jerseyQuantity');
+
+            return {
+                jerseyType: jerseyTypeEl ? jerseyTypeEl.value : '',
+                jerseyName: jerseyNameEl ? jerseyNameEl.value : '',
+                jerseyNumber: jerseyNumberEl ? jerseyNumberEl.value : '',
+                jerseySizeCategory: jerseySizeCategoryEl ? jerseySizeCategoryEl.value : '',
+                jerseySize: jerseySizeEl ? jerseySizeEl.value : '',
+                jerseySleeve: jerseySleeveEl ? jerseySleeveEl.value : '',
+                jerseyShorts: jerseyShortsEl ? jerseyShortsEl.value : '',
+                jerseyQuantity: jerseyQuantityEl ? jerseyQuantityEl.value : '1'
+            };
+        } catch (error) {
+            return {};
+        }
+    }
+
+    loadFormDataFromStorage() {
+        try {
+            const storageKey = this.getStorageKey();
+            const savedData = localStorage.getItem(storageKey);
+
+            if (savedData) {
+                const data = JSON.parse(savedData);
+
+                if (data.formData) {
+                    // Restore form field values
+                    if (data.formData.jerseyType) document.getElementById('jerseyType').value = data.formData.jerseyType;
+                    if (data.formData.jerseyName) document.getElementById('jerseyName').value = data.formData.jerseyName;
+                    if (data.formData.jerseyNumber) document.getElementById('jerseyNumber').value = data.formData.jerseyNumber;
+                    if (data.formData.jerseySizeCategory) document.getElementById('jerseySizeCategory').value = data.formData.jerseySizeCategory;
+                    if (data.formData.jerseySize) document.getElementById('jerseySize').value = data.formData.jerseySize;
+                    if (data.formData.jerseySleeve) document.getElementById('jerseySleeve').value = data.formData.jerseySleeve;
+                    if (data.formData.jerseyShorts) document.getElementById('jerseyShorts').value = data.formData.jerseyShorts;
+                    if (data.formData.jerseyQuantity) document.getElementById('jerseyQuantity').value = data.formData.jerseyQuantity;
+                }
+            }
+        } catch (error) {
+            console.error('Error loading form data from storage:', error);
+        }
+    }
+
+    clearLocalStorage() {
+        try {
+            const storageKey = this.getStorageKey();
+            localStorage.removeItem(storageKey);
+        } catch (error) {
+            console.error('Error clearing local storage:', error);
+        }
+    }
+
     setupStatusListener() {
         // Set up real-time listener for order status changes
         if (!window.db || !this.orderId) return;
@@ -1431,14 +1768,42 @@ class CustomerApp {
 
 // Initialize app when DOM is ready
 let customerApp;
+
+function initializeCustomerApp() {
+    try {
+        console.log('Initializing CustomerApp...');
+
+        // Wait a bit for scripts to load
+        setTimeout(() => {
+            // Create CustomerApp instance
+            customerApp = new CustomerApp();
+            window.customerApp = customerApp;
+
+            // Wait for Firebase and then initialize
+            customerApp.waitForFirebase().then(() => {
+                console.log('Firebase ready, calling init()...');
+                return customerApp.init();
+            }).catch(err => {
+                console.error('Firebase initialization failed:', err);
+                if (customerApp && typeof customerApp.showError === 'function') {
+                    customerApp.showError('Firebase not initialized. Please refresh the page.');
+                } else {
+                    alert('Firebase not initialized. Please refresh the page.');
+                }
+            });
+        }, 100);
+    } catch (error) {
+        console.error('Error creating CustomerApp:', error);
+        alert('Error initializing application: ' + error.message);
+    }
+}
+
+// Wait for all scripts to load
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', async () => {
-        customerApp = new CustomerApp();
-        window.customerApp = customerApp;
-        await customerApp.init();
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(initializeCustomerApp, 100);
     });
 } else {
-    customerApp = new CustomerApp();
-    window.customerApp = customerApp;
-    customerApp.init();
+    // DOM already ready, wait a bit for scripts
+    setTimeout(initializeCustomerApp, 100);
 }

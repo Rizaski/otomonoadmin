@@ -204,7 +204,7 @@
                                     <th>Customer</th>
                                     <th>Product</th>
                                     <th>Status</th>
-                                    <th>Quantity</th>
+                                    <th id="recentOrdersQuantityHeader">Quantity</th>
                                     <th>Date</th>
                                     <th>Actions</th>
                                 </tr>
@@ -267,7 +267,7 @@
                                     <th>Mobile</th>
                                     <th>Material</th>
                                     <th>Status</th>
-                                    <th>Quantity</th>
+                                    <th id="ordersListQuantityHeader">Quantity</th>
                                     <th>Date</th>
                                     <th>Actions</th>
                                 </tr>
@@ -682,7 +682,7 @@
                     </select>
                     <div class="form-hint">Select material from available inventory</div>
                 </div>
-                <div class="form-group">
+                <div class="form-group" id="orderQuantityGroup" style="display: none;">
                     <label for="orderAmount">
                         Quantity <span class="required">*</span>
                     </label>

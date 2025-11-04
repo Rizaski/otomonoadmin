@@ -1007,6 +1007,17 @@ button,
     font-size: 14px;
 }
 
+.data-table th.hidden-column,
+.data-table td.hidden-column {
+    display: none !important;
+    width: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+}
+
 .data-table tbody tr {
     transition: background 0.3s ease;
 }
@@ -2045,49 +2056,13 @@ button,
 @media (max-width: 768px) {
     .top-header {
         left: 0;
-        padding: 14px 15px;
+        padding: 12px 15px;
         flex-direction: row;
         align-items: center;
-        min-height: 70px;
-        justify-content: space-between;
-    }
-
-    .header-left {
-        flex: 1;
-        min-width: 0;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        overflow: hidden;
-    }
-
-    .header-logo {
-        margin-left: 8px;
-        flex-shrink: 0;
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-        overflow: visible;
-    }
-
-    .header-logo h2 {
-        font-size: 14px;
-        letter-spacing: 2px;
-        line-height: 1.2;
-    }
-
-    .header-logo p {
-        font-size: 11px;
-        line-height: 1.3;
-        margin-top: 2px;
-        white-space: nowrap;
-        overflow: visible;
-        text-overflow: ellipsis;
-        display: block;
     }
 
     .main-content {
-        padding: 90px 10px 10px 10px;
+        padding: 85px 10px 10px 10px;
     }
 
     .page-title {
@@ -2207,6 +2182,15 @@ button,
     .profile-menu-item i {
         font-size: 14px;
         width: 18px;
+    }
+
+    .header-logo h2 {
+        font-size: 16px;
+        letter-spacing: 2px;
+    }
+
+    .header-logo p {
+        font-size: 11px;
     }
 
     .action-buttons {
@@ -2524,22 +2508,8 @@ button,
 }
 
 @media (max-width: 480px) {
-    .top-header {
-        padding: 12px 10px;
-        min-height: 65px;
-    }
-
-    .header-logo h2 {
-        font-size: 13px;
-        letter-spacing: 1.5px;
-    }
-
-    .header-logo p {
-        font-size: 10px;
-    }
-
     .main-content {
-        padding: 85px 10px 10px 10px;
+        padding: 10px;
     }
 
     .page-title {
