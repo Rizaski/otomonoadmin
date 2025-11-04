@@ -245,9 +245,12 @@
                             <label>Date Range</label>
                             <input type="date" id="dateRange" class="form-input">
                         </div>
-                        <button class="btn-gradient" id="filterOrdersBtn">
-                            <i class="fas fa-filter"></i> Filter Orders
-                        </button>
+                        <div class="form-group">
+                            <label style="visibility: hidden;">Filter</label>
+                            <button class="btn-gradient" id="filterOrdersBtn">
+                                <i class="fas fa-filter"></i> Filter Orders
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -852,9 +855,14 @@
             </div>
             <div class="section-header" style="margin-bottom: 15px;">
                 <h3>Jersey Details</h3>
-                <button class="btn-gradient" id="addJerseyAdminBtn" style="padding: 8px 16px; font-size: 14px;">
-                    <i class="fas fa-plus"></i> Add Jersey
-                </button>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-secondary" id="exportJerseysBtn" style="padding: 8px 16px; font-size: 14px;">
+                        <i class="fas fa-download"></i> Export
+                    </button>
+                    <button class="btn-gradient" id="addJerseyAdminBtn" style="padding: 8px 16px; font-size: 14px;">
+                        <i class="fas fa-plus"></i> Add Jersey
+                    </button>
+                </div>
             </div>
             <div class="table-container" style="max-height: 400px; overflow-y: auto;">
                 <table class="data-table">

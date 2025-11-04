@@ -400,6 +400,7 @@ class App {
             e.preventDefault();
             this.handleAdminJerseySubmit(e);
         });
+        attachListener('exportJerseysBtn', 'click', () => this.exportJerseys());
         attachListener('addJerseyAdminBtn', 'click', () => {
             this.openAdminJerseyModal();
         });
@@ -1382,6 +1383,65 @@ class App {
                 </td>
             </tr>
         `).join('');
+    }
+
+    exportJerseys() {
+        if (!this.currentOrderJerseys || this.currentOrderJerseys.length === 0) {
+            this.showNotification('No jersey details to export', 'warning');
+            return;
+        }
+
+        try {
+            // Get order information for the filename
+            const orderInfo = this.orders.find(o => o.id === this.currentViewingOrderId) || {};
+            const orderId = orderInfo.id || 'order';
+            const customerName = (orderInfo.customer || 'customer').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+            const filename = `jersey_details_${customerName}_${orderId}_${new Date().toISOString().split('T')[0]}.csv`;
+
+            // CSV Headers
+            const headers = ['#', 'Type', 'Name', 'Number', 'Size Category', 'Size', 'Sleeve', 'Shorts'];
+
+            // Convert data to CSV format
+            const csvRows = [
+                headers.join(','),
+                ...this.currentOrderJerseys.map((jersey, index) => {
+                    return [
+                        index + 1,
+                        `"${(jersey.type || 'N/A').toString().replace(/"/g, '""')}"`,
+                        `"${(jersey.name || 'N/A').toString().replace(/"/g, '""')}"`,
+                        `"${(jersey.number || 'N/A').toString().replace(/"/g, '""')}"`,
+                        `"${(jersey.sizeCategory || 'N/A').toString().replace(/"/g, '""')}"`,
+                        `"${(jersey.size || 'N/A').toString().replace(/"/g, '""')}"`,
+                        `"${(jersey.sleeve || 'N/A').toString().replace(/"/g, '""')}"`,
+                        `"${(jersey.shorts || 'N/A').toString().replace(/"/g, '""')}"`
+                    ].join(',');
+                })
+            ];
+
+            const csvContent = csvRows.join('\n');
+
+            // Create BOM for UTF-8 (helps Excel open the file correctly)
+            const BOM = '\uFEFF';
+            const blob = new Blob([BOM + csvContent], {
+                type: 'text/csv;charset=utf-8;'
+            });
+
+            // Create download link
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            this.showNotification(`Exported ${this.currentOrderJerseys.length} jersey details successfully`, 'success');
+        } catch (error) {
+            console.error('Error exporting jerseys:', error);
+            this.showNotification('Error exporting jersey details', 'error');
+        }
     }
 
     async openAdminJerseyModal(jerseyId = null) {
