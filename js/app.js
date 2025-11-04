@@ -1682,6 +1682,12 @@ class App {
     async handleEmailSupplierSubmit(e) {
         e.preventDefault();
 
+        // Check if running from file:// protocol (won't work with PHP)
+        if (window.location.protocol === 'file:') {
+            this.showNotification('Error: Cannot send emails from file:// protocol. Please use a local web server (http://localhost). See PHPSETUP.md for setup instructions.', 'error');
+            return;
+        }
+
         const to = document.getElementById('supplierEmailTo').value.trim();
         const fromName = document.getElementById('supplierEmailFrom').value.trim();
         const fromEmail = document.getElementById('supplierEmailFromAddress').value.trim();
@@ -1706,6 +1712,12 @@ class App {
         sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
 
         try {
+            // Determine the correct path to sendmail.php
+            const baseUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
+            const phpUrl = baseUrl + '/sendmail.php';
+
+            console.log('Sending email request to:', phpUrl);
+
             // Send email via PHP backend
             const formData = new FormData();
             formData.append('name', fromName);
@@ -1714,7 +1726,7 @@ class App {
             formData.append('subject', subject);
             formData.append('message', message);
 
-            const response = await fetch('sendmail.php', {
+            const response = await fetch(phpUrl, {
                 method: 'POST',
                 body: formData
             });
@@ -1743,19 +1755,29 @@ class App {
 
                 // Try to extract error message from HTML if possible
                 let errorHint = '';
-                if (responseText.includes('404')) {
-                    errorHint = 'File not found. Check if sendmail.php exists in the project root.';
-                } else if (responseText.includes('500')) {
-                    errorHint = 'Server error. Check PHP error logs.';
+                if (responseText.includes('404') || responseText.includes('Not Found')) {
+                    errorHint = 'File not found (404). Check if sendmail.php exists in the project root and the URL is correct.';
+                } else if (responseText.includes('500') || responseText.includes('Internal Server Error')) {
+                    errorHint = 'Server error (500). Check PHP error logs. Make sure PHPMailer is installed (run: composer require phpmailer/phpmailer).';
                 } else if (responseText.includes('Fatal error') || responseText.includes('Parse error')) {
                     errorHint = 'PHP syntax error. Check sendmail.php for errors.';
                 } else if (responseText.includes('<!DOCTYPE') || responseText.includes('<html')) {
-                    errorHint = 'PHP is not executing. Server may be serving PHP as static files.';
+                    errorHint = 'PHP is not executing. Server may be serving PHP as static files. Ensure you are using http://localhost (not file://).';
+                } else if (responseText.length === 0) {
+                    errorHint = 'Empty response from server. PHP may not be running or the file path is incorrect.';
                 } else {
-                    errorHint = 'Unexpected response format.';
+                    errorHint = `Unexpected response format. First 200 chars: ${responseText.substring(0, 200)}`;
                 }
 
-                throw new Error(`Server configuration issue: ${errorHint} Please ensure PHP is running and sendmail.php is accessible.`);
+                // Provide helpful setup instructions
+                let setupInstructions = '\n\nSetup Instructions:\n';
+                setupInstructions += '1. Make sure you are accessing the app via http://localhost (not file://)\n';
+                setupInstructions += '2. Install PHP server (XAMPP, WAMP, MAMP, or PHP built-in server)\n';
+                setupInstructions += '3. Install PHPMailer: composer require phpmailer/phpmailer\n';
+                setupInstructions += '4. Test PHP: Open http://localhost/otomonoadmin/test-php.php in browser\n';
+                setupInstructions += '5. See PHPSETUP.md for detailed instructions';
+
+                throw new Error(`Server configuration issue: ${errorHint}${setupInstructions}`);
             }
 
             if (response.ok && result.success) {
