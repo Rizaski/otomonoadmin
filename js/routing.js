@@ -105,6 +105,7 @@ class Router {
             'orders': 'Orders',
             'customers': 'Customers',
             'materials': 'Materials',
+            'suppliers': 'Suppliers',
             'design-studio': 'Design Studio',
             'analytics': 'Analytics',
             'reports': 'Reports',

@@ -38,6 +38,10 @@
                     <i class="fas fa-box"></i>
                     <span>Materials</span>
                 </a></li>
+            <li><a href="#suppliers" class="nav-item" data-page="suppliers">
+                    <i class="fas fa-truck"></i>
+                    <span>Suppliers</span>
+                </a></li>
             <li><a href="#design-studio" class="nav-item" data-page="design-studio">
                     <i class="fas fa-paint-brush"></i>
                     <span>Design Studio</span>
@@ -427,6 +431,79 @@
                 </div>
             </div>
 
+            <!-- Suppliers Page -->
+            <div id="suppliers" class="page">
+                <h1 class="page-title">Suppliers Management</h1>
+                <p class="page-subtitle">Manage supplier information and locations</p>
+
+                <div class="kpi-cards">
+                    <div class="kpi-card">
+                        <div class="kpi-icon red">
+                            <i class="fas fa-truck"></i>
+                        </div>
+                        <div class="kpi-info">
+                            <h3>Total Suppliers</h3>
+                            <p class="kpi-value" id="totalSuppliers">0</p>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon green">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="kpi-info">
+                            <h3>Active</h3>
+                            <p class="kpi-value" id="activeSuppliers">0</p>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon orange">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="kpi-info">
+                            <h3>Pending</h3>
+                            <p class="kpi-value" id="pendingSuppliers">0</p>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon red">
+                            <i class="fas fa-times-circle"></i>
+                        </div>
+                        <div class="kpi-info">
+                            <h3>Discontinued</h3>
+                            <p class="kpi-value" id="discontinuedSuppliers">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2>Suppliers List</h2>
+                        <button class="btn-gradient" id="addSupplierBtn">
+                            <i class="fas fa-plus"></i> Add Supplier
+                        </button>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Status</th>
+                                    <th>Location</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="suppliersTable">
+                                <tr>
+                                    <td colspan="5" class="no-data">No suppliers found</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination" id="suppliersPagination"></div>
+                </div>
+            </div>
+
             <!-- Design Studio Page -->
             <div id="design-studio" class="page">
                 <div class="design-studio-container">
@@ -685,6 +762,15 @@
                     <div class="form-hint">Enter customer email address (optional but recommended for order confirmations)</div>
                 </div>
                 <div class="form-group">
+                    <label for="orderSupplier">
+                        Supplier
+                    </label>
+                    <select id="orderSupplier" class="form-input">
+                        <option value="">-- Select Supplier --</option>
+                    </select>
+                    <div class="form-hint">Select supplier for this order (optional)</div>
+                </div>
+                <div class="form-group">
                     <label for="orderMaterial">
                         Material <span class="required">*</span>
                     </label>
@@ -813,6 +899,58 @@
                     <button type="button" class="btn-secondary" id="cancelMaterialBtn">Cancel</button>
                     <button type="submit" class="btn-gradient">
                         <i class="fas fa-save"></i> Save Material
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="supplierModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="supplierModalTitle">Add New Supplier</h2>
+            <p class="modal-subtitle">Enter supplier information below</p>
+            <form id="supplierForm">
+                <div class="form-group">
+                    <label for="supplierName">
+                        Supplier Name <span class="required">*</span>
+                    </label>
+                    <input type="text" id="supplierName" required class="form-input" placeholder="Enter supplier name">
+                    <div class="form-hint">Enter the name of the supplier</div>
+                </div>
+                <div class="form-group">
+                    <label for="supplierEmail">
+                        Email Address <span class="required">*</span>
+                    </label>
+                    <input type="email" id="supplierEmail" required class="form-input" placeholder="supplier@example.com">
+                    <div class="form-hint">Enter supplier email address</div>
+                </div>
+                <div class="form-group">
+                    <label for="supplierStatus">
+                        Status <span class="required">*</span>
+                    </label>
+                    <select id="supplierStatus" required class="form-input">
+                        <option value="active">Active</option>
+                        <option value="pending">Pending</option>
+                        <option value="discontinued">Discontinued</option>
+                    </select>
+                    <div class="form-hint">Select supplier status</div>
+                </div>
+                <div class="form-group">
+                    <label for="supplierLocation">
+                        Location <span class="required">*</span>
+                    </label>
+                    <select id="supplierLocation" required class="form-input">
+                        <option value="">-- Select Location --</option>
+                        <option value="Maldives">Maldives</option>
+                        <option value="Sri Lanka">Sri Lanka</option>
+                    </select>
+                    <div class="form-hint">Select supplier location</div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" id="cancelSupplierBtn">Cancel</button>
+                    <button type="submit" class="btn-gradient">
+                        <i class="fas fa-save"></i> Save Supplier
                     </button>
                 </div>
             </form>
@@ -1012,11 +1150,61 @@
         </div>
     </div>
 
+    <!-- Email Supplier Modal -->
+    <div id="emailSupplierModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <span class="close">&times;</span>
+            <h2>Send Email to Supplier</h2>
+            <p class="modal-subtitle">Fill in the email details below</p>
+            <form id="emailSupplierForm">
+                <div class="form-group">
+                    <label for="supplierEmailTo">
+                        To <span class="required">*</span>
+                    </label>
+                    <input type="email" id="supplierEmailTo" required class="form-input" placeholder="supplier@example.com">
+                    <div class="form-hint">Recipient email address</div>
+                </div>
+                <div class="form-group">
+                    <label for="supplierEmailFrom">
+                        From Name <span class="required">*</span>
+                    </label>
+                    <input type="text" id="supplierEmailFrom" required class="form-input" placeholder="Your Name">
+                    <div class="form-hint">Your name as the sender</div>
+                </div>
+                <div class="form-group">
+                    <label for="supplierEmailFromAddress">
+                        From Email <span class="required">*</span>
+                    </label>
+                    <input type="email" id="supplierEmailFromAddress" required class="form-input" placeholder="your_email@gmail.com">
+                    <div class="form-hint">Your email address (must match Gmail account configured in sendmail.php)</div>
+                </div>
+                <div class="form-group">
+                    <label for="supplierEmailSubject">
+                        Subject <span class="required">*</span>
+                    </label>
+                    <input type="text" id="supplierEmailSubject" required class="form-input" placeholder="Email subject">
+                </div>
+                <div class="form-group">
+                    <label for="supplierEmailMessage">
+                        Message <span class="required">*</span>
+                    </label>
+                    <textarea id="supplierEmailMessage" required class="form-input" rows="8" placeholder="Enter your message here"></textarea>
+                    <div class="form-hint">Email content</div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" id="cancelEmailSupplierBtn">Cancel</button>
+                    <button type="submit" class="btn-gradient" id="sendEmailSupplierBtn">
+                        <i class="fas fa-paper-plane"></i> Send Email
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-
     <!-- App Scripts -->
     <!-- Order matters: Firebase first, then Router, then App -->
     <script src="js/firebase-config.js"></script>

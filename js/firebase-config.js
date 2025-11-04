@@ -31,6 +31,7 @@ try {
         auth = null;
     }
 
+
     // Enable offline persistence (optional - for offline support)
     // Using a simplified approach to avoid deprecation warnings
     // The compat library handles persistence automatically for offline support

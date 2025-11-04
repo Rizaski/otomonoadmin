@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+functions/node_modules/
+vendor/
+
+# Environment variables
+.env
+.env.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+
+# Build files
+dist/
+build/
+
+# Sensitive credentials (if any)
+sendmail.php
+# Note: sendmail.php contains credentials but is needed for the app to work
+# Consider using environment variables in production
+

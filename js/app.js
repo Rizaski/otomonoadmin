@@ -5,11 +5,13 @@ class App {
         this.allOrders = []; // Initialize allOrders to prevent undefined issues
         this.customers = [];
         this.materials = [];
+        this.suppliers = [];
         this.designs = [];
         this.currentViewingOrderId = null;
         this.currentOrderJerseys = [];
         this.currentEditingJerseyId = null;
         this.currentOrderLink = null;
+        this.currentEmailSupplierData = null;
 
         // Pagination state (10 records per page)
         this.pagination = {
@@ -28,6 +30,10 @@ class App {
             materials: {
                 currentPage: 1,
                 pageSize: 10
+            },
+            suppliers: {
+                currentPage: 1,
+                pageSize: 10
             }
         };
 
@@ -36,6 +42,7 @@ class App {
             orders: null,
             customers: null,
             materials: null,
+            suppliers: null,
             allOrders: null,
             notifications: null
         };
@@ -180,6 +187,40 @@ class App {
                         this.updateKPIs();
                     }, (error) => {
                         console.error('Error in materials listener:', error);
+                    });
+            }
+
+            // Real-time listener for suppliers
+            if (!this.firebaseListeners.suppliers) {
+                this.firebaseListeners.suppliers = db.collection('suppliers')
+                    .onSnapshot((snapshot) => {
+                        this.suppliers = snapshot.docs.map(doc => ({
+                            id: doc.id,
+                            ...doc.data()
+                        }));
+                        // Only render if we're on the suppliers page
+                        const suppliersPage = document.getElementById('suppliers');
+                        if (suppliersPage && suppliersPage.classList.contains('active')) {
+                            this.renderSuppliers();
+                        }
+                        // Update order form dropdown if modal is open
+                        const orderModal = document.getElementById('orderModal');
+                        if (orderModal && orderModal.classList.contains('active')) {
+                            const supplierSelect = document.getElementById('orderSupplier');
+                            if (supplierSelect && this.suppliers.length > 0) {
+                                const currentValue = supplierSelect.value;
+                                supplierSelect.innerHTML = '<option value="">-- Select Supplier --</option>' +
+                                    this.suppliers.filter(s => s.status === 'active').map(s =>
+                                        `<option value="${s.id}">${s.name} (${s.location})</option>`
+                                    ).join('');
+                                if (currentValue) {
+                                    supplierSelect.value = currentValue;
+                                }
+                            }
+                        }
+                        this.updateKPIs();
+                    }, (error) => {
+                        console.error('Error in suppliers listener:', error);
                     });
             }
 
@@ -368,6 +409,9 @@ class App {
         // Materials page
         attachListener('addMaterialBtn', 'click', () => this.openMaterialModal());
 
+        // Suppliers
+        attachListener('addSupplierBtn', 'click', () => this.openSupplierModal());
+
         // Design Studio
         attachListener('newDesignBtn', 'click', () => this.newDesign());
         attachListener('saveDesignBtn', 'click', () => this.saveDesign());
@@ -395,6 +439,10 @@ class App {
         attachListener('materialForm', 'submit', (e) => {
             e.preventDefault();
             this.handleMaterialSubmit(e);
+        });
+        attachListener('supplierForm', 'submit', (e) => {
+            e.preventDefault();
+            this.handleSupplierSubmit(e);
         });
         attachListener('adminJerseyForm', 'submit', (e) => {
             e.preventDefault();
@@ -450,6 +498,29 @@ class App {
                 modal.style.display = 'none';
             }
         });
+        attachListener('cancelSupplierBtn', 'click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const modal = document.getElementById('supplierModal');
+            if (modal) {
+                modal.classList.remove('active');
+                modal.style.display = 'none';
+            }
+        });
+
+
+        // Email Supplier Form
+        attachListener('emailSupplierForm', 'submit', (e) => {
+            e.preventDefault();
+            this.handleEmailSupplierSubmit(e);
+        });
+        attachListener('cancelEmailSupplierBtn', 'click', () => {
+            const modal = document.getElementById('emailSupplierModal');
+            if (modal) {
+                modal.classList.remove('active');
+                modal.style.display = 'none';
+            }
+        });
 
         // Handle report card buttons with data-report-type attribute
         document.querySelectorAll('button[data-report-type]').forEach(btn => {
@@ -497,10 +568,7 @@ class App {
                     case 'customer':
                         if (action === 'view') this.viewCustomer(id);
                         else if (action === 'edit') this.editCustomer(id);
-                        else if (action === 'send-confirmation') {
-                            const email = btn.getAttribute('data-email');
-                            await this.sendOrderConfirmationEmail(id, email);
-                        } else if (action === 'delete') this.deleteCustomer(id);
+                        else if (action === 'delete') this.deleteCustomer(id);
                         break;
                     case 'customer-order':
                         if (action === 'view-order') this.viewOrder(id);
@@ -508,6 +576,13 @@ class App {
                     case 'material':
                         if (action === 'edit') this.editMaterial(id);
                         else if (action === 'delete') this.deleteMaterial(id);
+                        break;
+                    case 'supplier':
+                        if (action === 'edit') this.editSupplier(id);
+                        else if (action === 'send-email') {
+                            const email = btn.getAttribute('data-email');
+                            this.openEmailSupplierModal(id, email);
+                        } else if (action === 'delete') this.deleteSupplier(id);
                         break;
                     case 'design':
                         if (action === 'delete') this.deleteDesign(id);
@@ -631,6 +706,16 @@ class App {
                 this.renderMaterials();
             }
 
+            // Load suppliers (if listener is not set up yet)
+            if (!this.firebaseListeners.suppliers) {
+                const suppliersSnapshot = await db.collection('suppliers').get();
+                this.suppliers = suppliersSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                this.renderSuppliers();
+            }
+
             // Load all orders for orders page and analytics (if listener is not set up yet)
             if (!this.firebaseListeners.allOrders) {
                 const allOrdersSnapshot = await db.collection('orders').orderBy('date', 'desc').get();
@@ -700,6 +785,19 @@ class App {
 
         const outOfStockEl = document.getElementById('outOfStock');
         if (outOfStockEl) outOfStockEl.textContent = this.materials.filter(m => m.stock === 0 || m.status === 'out-of-stock').length;
+
+        // Suppliers KPIs
+        const totalSuppliersEl = document.getElementById('totalSuppliers');
+        if (totalSuppliersEl) totalSuppliersEl.textContent = this.suppliers.length || 0;
+
+        const activeSuppliersEl = document.getElementById('activeSuppliers');
+        if (activeSuppliersEl) activeSuppliersEl.textContent = this.suppliers.filter(s => s.status === 'active').length;
+
+        const pendingSuppliersEl = document.getElementById('pendingSuppliers');
+        if (pendingSuppliersEl) pendingSuppliersEl.textContent = this.suppliers.filter(s => s.status === 'pending').length;
+
+        const discontinuedSuppliersEl = document.getElementById('discontinuedSuppliers');
+        if (discontinuedSuppliersEl) discontinuedSuppliersEl.textContent = this.suppliers.filter(s => s.status === 'discontinued').length;
 
         // Analytics KPIs - Use allOrders for accurate revenue calculation
         const totalRevenue = allOrders.reduce((sum, o) => sum + (parseFloat(o.amount) || 0), 0);
@@ -847,11 +945,6 @@ class App {
                     <td>
                         <button class="action-btn" data-action="view" data-id="${customer.id}" data-type="customer">View</button>
                         <button class="action-btn" data-action="edit" data-id="${customer.id}" data-type="customer">Edit</button>
-                        ${customer.email && customer.email !== 'N/A' ? `
-                            <button class="action-btn" data-action="send-confirmation" data-id="${customer.id}" data-email="${customer.email}" data-type="customer" title="Send Order Confirmation Email">
-                                <i class="fas fa-envelope"></i> Confirm
-                            </button>
-                        ` : ''}
                         <button class="action-btn delete" data-action="delete" data-id="${customer.id}" data-type="customer">Delete</button>
                     </td>
                 </tr>
@@ -902,6 +995,45 @@ class App {
         // Populate material dropdown in order form (will be populated when modal opens)
     }
 
+    renderSuppliers() {
+        const tbody = document.getElementById('suppliersTable');
+        if (!tbody) return;
+
+        if (this.suppliers.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="no-data">No suppliers found</td></tr>';
+            this.renderPagination('suppliers', [], 'suppliersPagination');
+            return;
+        }
+
+        const pagination = this.pagination.suppliers;
+        const totalPages = Math.ceil(this.suppliers.length / pagination.pageSize);
+        const startIndex = (pagination.currentPage - 1) * pagination.pageSize;
+        const endIndex = startIndex + pagination.pageSize;
+        const paginatedSuppliers = this.suppliers.slice(startIndex, endIndex);
+
+        tbody.innerHTML = paginatedSuppliers.map(supplier => {
+            return `
+                <tr>
+                    <td>${supplier.name || 'N/A'}</td>
+                    <td>${supplier.email || 'N/A'}</td>
+                    <td><span class="status-badge status-${supplier.status || 'active'}">${(supplier.status || 'active').charAt(0).toUpperCase() + (supplier.status || 'active').slice(1)}</span></td>
+                    <td>${supplier.location || 'N/A'}</td>
+                    <td>
+                        ${supplier.email && supplier.email !== 'N/A' ? `
+                            <button class="action-btn" data-action="send-email" data-id="${supplier.id}" data-email="${supplier.email}" data-type="supplier" title="Send Email">
+                                <i class="fas fa-envelope"></i> Send Email
+                            </button>
+                        ` : ''}
+                        <button class="action-btn" data-action="edit" data-id="${supplier.id}" data-type="supplier">Edit</button>
+                        <button class="action-btn delete" data-action="delete" data-id="${supplier.id}" data-type="supplier">Delete</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        this.renderPagination('suppliers', this.suppliers, 'suppliersPagination');
+    }
+
     // Order Management
     async openOrderModal(orderId = null) {
         console.log('openOrderModal called', orderId);
@@ -921,9 +1053,28 @@ class App {
 
         const subtitle = modal.querySelector('.modal-subtitle');
 
+        // Load suppliers if not already loaded
+        if (!this.suppliers || this.suppliers.length === 0) {
+            await this.loadSuppliersData();
+        }
+
         // Load materials if not already loaded
         if (!this.materials || this.materials.length === 0) {
             await this.loadMaterialsData();
+        }
+
+        // Populate supplier dropdown
+        const supplierSelect = document.getElementById('orderSupplier');
+        if (supplierSelect) {
+            supplierSelect.innerHTML = '<option value="">-- Select Supplier --</option>';
+            if (this.suppliers && this.suppliers.length > 0) {
+                this.suppliers.filter(s => s.status === 'active').forEach(s => {
+                    const option = document.createElement('option');
+                    option.value = s.id;
+                    option.textContent = `${s.name} (${s.location})`;
+                    supplierSelect.appendChild(option);
+                });
+            }
         }
 
         // Populate material dropdown
@@ -954,6 +1105,7 @@ class App {
                 const customerInput = document.getElementById('orderCustomer');
                 const mobileInput = document.getElementById('orderMobile');
                 const emailInput = document.getElementById('orderEmail');
+                const supplierInput = document.getElementById('orderSupplier');
                 const materialInput = document.getElementById('orderMaterial');
                 const amountInput = document.getElementById('orderAmount');
                 const statusInput = document.getElementById('orderStatus');
@@ -961,6 +1113,7 @@ class App {
                 if (customerInput) customerInput.value = order.customer || '';
                 if (mobileInput) mobileInput.value = order.mobile || '';
                 if (emailInput) emailInput.value = order.email || '';
+                if (supplierInput && order.supplierId) supplierInput.value = order.supplierId || '';
                 if (materialInput) materialInput.value = order.material || '';
                 if (amountInput) amountInput.value = order.amount || '';
                 if (statusInput) statusInput.value = order.status || 'pending';
@@ -1005,6 +1158,7 @@ class App {
         const customer = document.getElementById('orderCustomer').value.trim();
         const mobile = document.getElementById('orderMobile').value.trim();
         const email = document.getElementById('orderEmail') ? document.getElementById('orderEmail').value.trim() : '';
+        const supplierId = document.getElementById('orderSupplier') ? document.getElementById('orderSupplier').value : '';
         const material = document.getElementById('orderMaterial').value;
         const amount = parseInt(document.getElementById('orderAmount').value);
 
@@ -1019,6 +1173,7 @@ class App {
             customer,
             mobile,
             email: email || null,
+            supplierId: supplierId || null,
             material,
             amount,
             status: document.getElementById('orderStatus').value,
@@ -1461,197 +1616,177 @@ class App {
         }
     }
 
-    async sendOrderConfirmationEmail(customerId, customerEmail) {
+    openEmailSupplierModal(supplierId, supplierEmail) {
+        const modal = document.getElementById('emailSupplierModal');
+        if (!modal) {
+            this.showNotification('Email modal not found', 'error');
+            return;
+        }
+
+        // Get supplier data
+        const supplier = this.suppliers.find(s => s.id === supplierId);
+        if (!supplier) {
+            this.showNotification('Supplier not found', 'error');
+            return;
+        }
+
+        // Get supplier's orders for context
+        const supplierOrders = (this.allOrders || this.orders || []).filter(order =>
+            order.supplierId === supplierId
+        );
+
+        // Set recipient email
+        const emailToInput = document.getElementById('supplierEmailTo');
+        if (emailToInput) {
+            emailToInput.value = supplierEmail || supplier.email || '';
+        }
+
+        // Clear other fields
+        document.getElementById('supplierEmailFrom').value = '';
+        document.getElementById('supplierEmailFromAddress').value = '';
+        document.getElementById('supplierEmailSubject').value = '';
+
+        // Pre-fill message with order details if available
+        let messageContent = `Dear ${supplier.name},\n\n`;
+        if (supplierOrders.length > 0) {
+            messageContent += `Here is a summary of orders assigned to you:\n\n`;
+            supplierOrders.forEach(order => {
+                const orderDate = this.formatDate(order.date);
+                messageContent += `Order ID: ${order.id}\n`;
+                messageContent += `Customer: ${order.customer || 'N/A'}\n`;
+                messageContent += `Order Date: ${orderDate}\n`;
+                messageContent += `Status: ${order.status || 'N/A'}\n`;
+                messageContent += `Material: ${order.product || order.material || 'N/A'}\n`;
+                messageContent += `Quantity: ${order.amount || order.quantity || 0}\n`;
+                messageContent += `---\n\n`;
+            });
+            messageContent += `Total Orders: ${supplierOrders.length}\n\n`;
+        }
+        messageContent += `Best regards,\nOtomono Jersey Team`;
+
+        document.getElementById('supplierEmailMessage').value = messageContent;
+
+        // Store supplier data for later use
+        this.currentEmailSupplierData = {
+            supplierId,
+            supplierEmail: supplierEmail || supplier.email,
+            supplierName: supplier.name,
+            supplierOrders
+        };
+
+        // Open modal
+        modal.classList.add('active');
+        modal.style.display = 'flex';
+    }
+
+    async handleEmailSupplierSubmit(e) {
+        e.preventDefault();
+
+        const to = document.getElementById('supplierEmailTo').value.trim();
+        const fromName = document.getElementById('supplierEmailFrom').value.trim();
+        const fromEmail = document.getElementById('supplierEmailFromAddress').value.trim();
+        const subject = document.getElementById('supplierEmailSubject').value.trim();
+        const message = document.getElementById('supplierEmailMessage').value.trim();
+
+        if (!to || !fromName || !fromEmail || !subject || !message) {
+            this.showNotification('Please fill in all required fields', 'error');
+            return;
+        }
+
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(to) || !emailRegex.test(fromEmail)) {
+            this.showNotification('Please enter valid email addresses', 'error');
+            return;
+        }
+
+        const sendBtn = document.getElementById('sendEmailSupplierBtn');
+        const originalText = sendBtn.innerHTML;
+        sendBtn.disabled = true;
+        sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+
         try {
-            // Get customer data
-            const customer = this.customers.find(c => c.id === customerId);
-            if (!customer) {
-                this.showNotification('Customer not found', 'error');
-                return;
-            }
+            // Send email via PHP backend
+            const formData = new FormData();
+            formData.append('name', fromName);
+            formData.append('email', fromEmail);
+            formData.append('to', to);
+            formData.append('subject', subject);
+            formData.append('message', message);
 
-            // Get customer's orders
-            const customerOrders = (this.allOrders || this.orders || []).filter(order =>
-                (order.customer === customer.name || order.customerId === customerId) &&
-                (order.mobile === customer.phone || order.phone === customer.phone)
-            );
+            const response = await fetch('sendmail.php', {
+                method: 'POST',
+                body: formData
+            });
 
-            if (customerOrders.length === 0) {
-                this.showNotification('No orders found for this customer', 'warning');
-                return;
-            }
+            // Get response text first to check what we received
+            const responseText = await response.text();
+            console.log('Response status:', response.status);
+            console.log('Response headers:', response.headers);
+            console.log('Response text (first 500 chars):', responseText.substring(0, 500));
 
-            // Get the latest order
-            const latestOrder = customerOrders.sort((a, b) => {
-                const dateA = (a.date && a.date.toDate) ? a.date.toDate() : new Date(a.date || 0);
-                const dateB = (b.date && b.date.toDate) ? b.date.toDate() : new Date(b.date || 0);
-                return dateB - dateA;
-            })[0];
+            // Check if response is JSON
+            const contentType = response.headers.get('content-type');
+            let result;
 
-            // Use order email if available, otherwise fall back to customer email
-            const orderEmail = latestOrder.email || customerEmail || customer.email;
-
-            if (!orderEmail || orderEmail === 'N/A') {
-                this.showNotification('No email address found for this customer. Please add email to the order.', 'warning');
-                return;
-            }
-
-            // Try using Firebase Cloud Function first (if available), otherwise try direct API
-            const useCloudFunction = true; // Set to false to try direct API
-            const BIRD_API_KEY = 'OEYmDssyk0pj1z1LPsl0lU9MAu8rhjNIzjty';
-            // Try different possible Bird API endpoints
-            const BIRD_API_URLS = [
-                'https://api.bird.com/v1/messages',
-                'https://api.app.bird.com/v1/messages',
-                'https://api.bird.com/v1/email/send',
-                'https://api.app.bird.com/v1/email/send'
-            ];
-
-            // Prepare email content
-            const customerLink = latestOrder.linkToken ?
-                `${window.location.origin}/customer.html?orderId=${latestOrder.id}&token=${latestOrder.linkToken}` :
-                null;
-
-            const emailSubject = `Order Confirmation - Order #${latestOrder.id}`;
-            const emailHtml = `
-                <html>
-                <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-                    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                        <h2 style="color: #FF003C;">Order Confirmation</h2>
-                        <p>Dear ${customer.name},</p>
-                        <p>Thank you for your order with Otomono Jersey!</p>
-                        <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
-                            <h3 style="margin-top: 0;">Order Details:</h3>
-                            <p><strong>Order ID:</strong> ${latestOrder.id}</p>
-                            <p><strong>Order Date:</strong> ${this.formatDate(latestOrder.date)}</p>
-                            <p><strong>Status:</strong> ${latestOrder.status}</p>
-                            <p><strong>Material:</strong> ${latestOrder.product || latestOrder.material || 'N/A'}</p>
-                            <p><strong>Quantity:</strong> ${latestOrder.amount || latestOrder.quantity || 0}</p>
-                        </div>
-                        ${customerLink ? `
-                        <p>
-                            <a href="${customerLink}" style="display: inline-block; background: #FF003C; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin: 20px 0;">
-                                View Order Details
-                            </a>
-                        </p>
-                        ` : ''}
-                        <p>Best regards,<br>Otomono Jersey Team</p>
-                    </div>
-                </body>
-                </html>
-            `;
-
-            const emailText = `
-Order Confirmation
-
-Dear ${customer.name},
-
-Thank you for your order with Otomono Jersey!
-
-Order Details:
-- Order ID: ${latestOrder.id}
-- Order Date: ${this.formatDate(latestOrder.date)}
-- Status: ${latestOrder.status}
-- Material: ${latestOrder.product || latestOrder.material || 'N/A'}
-- Quantity: ${latestOrder.amount || latestOrder.quantity || 0}
-
-${customerLink ? `You can view and manage your order details here: ${customerLink}` : ''}
-
-Best regards,
-Otomono Jersey Team
-            `.trim();
-
-            // Prepare email payload - try different possible formats
-            const emailPayloads = [{
-                    to: orderEmail,
-                    subject: emailSubject,
-                    html: emailHtml,
-                    text: emailText
-                },
-                {
-                    recipient: orderEmail,
-                    subject: emailSubject,
-                    html_body: emailHtml,
-                    text_body: emailText
-                },
-                {
-                    email: orderEmail,
-                    subject: emailSubject,
-                    body: emailHtml,
-                    body_text: emailText
-                }
-            ];
-
-            // Try Firebase Cloud Function first (recommended)
-            if (useCloudFunction && typeof firebase !== 'undefined' && firebase.functions) {
+            if (contentType && contentType.includes('application/json')) {
                 try {
-                    const sendEmail = firebase.functions().httpsCallable('sendOrderConfirmation');
-                    const result = await sendEmail({
-                        to: orderEmail,
-                        subject: emailSubject,
-                        html: emailHtml,
-                        text: emailText
-                    });
-
-                    if (result.data && result.data.success) {
-                        this.showNotification(`Order confirmation email sent to ${orderEmail}`, 'success');
-                        return;
-                    }
-                } catch (cloudFunctionError) {
-                    console.warn('Cloud Function not available, trying direct API:', cloudFunctionError);
-                    // Continue to try direct API
+                    result = JSON.parse(responseText);
+                } catch (parseError) {
+                    console.error('JSON parse error:', parseError);
+                    throw new Error('Server returned invalid JSON. Response: ' + responseText.substring(0, 200));
                 }
-            }
-
-            // Fallback: Try sending email with different endpoints and payload formats
-            let lastError = null;
-            for (const apiUrl of BIRD_API_URLS) {
-                for (const payload of emailPayloads) {
-                    try {
-                        const response = await fetch(apiUrl, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${BIRD_API_KEY}`,
-                                'X-API-Key': BIRD_API_KEY,
-                                'X-Bird-API-Key': BIRD_API_KEY
-                            },
-                            body: JSON.stringify(payload)
-                        });
-
-                        if (response.ok) {
-                            const result = await response.json().catch(() => ({}));
-                            this.showNotification(`Order confirmation email sent to ${orderEmail}`, 'success');
-                            return;
-                        } else {
-                            const errorData = await response.json().catch(() => ({}));
-                            lastError = new Error(errorData.message || errorData.error || `HTTP error! status: ${response.status}`);
-                        }
-                    } catch (fetchError) {
-                        // CORS or network error - continue to next attempt
-                        lastError = fetchError;
-                        continue;
-                    }
-                }
-            }
-
-            // If all attempts failed, it's likely a CORS issue
-            if (lastError && (lastError.message.includes('Failed to fetch') || lastError.message.includes('CORS'))) {
-                // Fallback: Copy email details to clipboard
-                const emailContent = `To: ${orderEmail}\nSubject: ${emailSubject}\n\n${emailText}`;
-                if (navigator.clipboard) {
-                    await navigator.clipboard.writeText(emailContent);
-                    this.showNotification(`Email service unavailable (CORS error). Email content copied to clipboard. Please configure Firebase Cloud Functions for email sending.`, 'warning');
-                } else {
-                    alert(`Email Service Error:\n\nThe Bird.com API cannot be accessed directly from the browser due to CORS restrictions.\n\nEmail Details:\n\n${emailContent}\n\nPlease configure Firebase Cloud Functions to handle email sending.`);
-                }
-                throw new Error('CORS error: Bird.com API requires backend proxy or Cloud Functions. See functions/sendEmail.js for setup instructions.');
             } else {
-                throw lastError || new Error('Failed to send email: Unknown error');
+                // Response is not JSON (likely HTML error page or PHP error)
+                console.error('Non-JSON response. Content-Type:', contentType);
+                console.error('Full response:', responseText);
+
+                // Try to extract error message from HTML if possible
+                let errorHint = '';
+                if (responseText.includes('404')) {
+                    errorHint = 'File not found. Check if sendmail.php exists in the project root.';
+                } else if (responseText.includes('500')) {
+                    errorHint = 'Server error. Check PHP error logs.';
+                } else if (responseText.includes('Fatal error') || responseText.includes('Parse error')) {
+                    errorHint = 'PHP syntax error. Check sendmail.php for errors.';
+                } else if (responseText.includes('<!DOCTYPE') || responseText.includes('<html')) {
+                    errorHint = 'PHP is not executing. Server may be serving PHP as static files.';
+                } else {
+                    errorHint = 'Unexpected response format.';
+                }
+
+                throw new Error(`Server configuration issue: ${errorHint} Please ensure PHP is running and sendmail.php is accessible.`);
+            }
+
+            if (response.ok && result.success) {
+                this.showNotification(`Email sent successfully to ${to}`, 'success');
+                // Close modal
+                const modal = document.getElementById('emailSupplierModal');
+                if (modal) {
+                    modal.classList.remove('active');
+                    modal.style.display = 'none';
+                }
+                // Reset form
+                e.target.reset();
+            } else {
+                throw new Error(result.message || 'Failed to send email');
             }
         } catch (error) {
-            console.error('Error sending confirmation email:', error);
-            this.showNotification('Error sending email: ' + (error.text || error.message || 'Please check email service configuration'), 'error');
+            console.error('Error sending email:', error);
+            let errorMessage = 'Error sending email: ';
+
+            if (error.message.includes('JSON')) {
+                errorMessage += 'Server configuration error. Please ensure PHP is running and sendmail.php is accessible.';
+            } else if (error.message.includes('fetch')) {
+                errorMessage += 'Cannot connect to server. Please check if PHP server is running.';
+            } else {
+                errorMessage += error.message || 'Please check your PHP configuration';
+            }
+
+            this.showNotification(errorMessage, 'error');
+        } finally {
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = originalText;
         }
     }
 
@@ -2202,6 +2337,145 @@ Otomono Jersey Team
 
     editMaterial(materialId) {
         this.openMaterialModal(materialId);
+    }
+
+    // Supplier Management
+    async openSupplierModal(supplierId = null) {
+        const modal = document.getElementById('supplierModal');
+        const form = document.getElementById('supplierForm');
+        const title = document.getElementById('supplierModalTitle');
+
+        if (!modal || !form || !title) {
+            console.error('Supplier modal elements not found!');
+            return;
+        }
+
+        const subtitle = modal.querySelector('.modal-subtitle');
+
+        if (supplierId) {
+            const supplier = this.suppliers.find(s => s.id === supplierId);
+            if (supplier) {
+                title.textContent = 'Edit Supplier';
+                if (subtitle) subtitle.textContent = 'Update supplier details below';
+                document.getElementById('supplierName').value = supplier.name || '';
+                document.getElementById('supplierEmail').value = supplier.email || '';
+                document.getElementById('supplierStatus').value = supplier.status || 'active';
+                document.getElementById('supplierLocation').value = supplier.location || '';
+                form.dataset.supplierId = supplierId;
+            }
+        } else {
+            title.textContent = 'Add New Supplier';
+            if (subtitle) subtitle.textContent = 'Enter supplier information below';
+            form.reset();
+            delete form.dataset.supplierId;
+        }
+
+        modal.classList.add('active');
+        modal.style.display = 'flex';
+    }
+
+    async handleSupplierSubmit(e) {
+        e.preventDefault();
+        if (!window.db) {
+            this.showNotification('Firebase not initialized', 'error');
+            return;
+        }
+
+        const form = e.target;
+        const supplierId = form.dataset.supplierId;
+
+        // Form validation
+        const name = document.getElementById('supplierName').value.trim();
+        const email = document.getElementById('supplierEmail').value.trim();
+        const status = document.getElementById('supplierStatus').value;
+        const location = document.getElementById('supplierLocation').value;
+
+        if (!name || !email || !status || !location) {
+            this.showNotification('Please fill in all required fields', 'error');
+            return;
+        }
+
+        // Email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            this.showNotification('Please enter a valid email address', 'error');
+            return;
+        }
+
+        const supplierData = {
+            name,
+            email,
+            status,
+            location
+        };
+
+        // Show loading state
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+        try {
+            if (supplierId) {
+                await db.collection('suppliers').doc(supplierId).update(supplierData);
+            } else {
+                await db.collection('suppliers').add(supplierData);
+            }
+            const supplierModal = document.getElementById('supplierModal');
+            if (supplierModal) {
+                supplierModal.classList.remove('active');
+                supplierModal.style.display = 'none';
+            }
+            form.reset();
+            this.showNotification('Supplier saved successfully!', 'success');
+            await this.loadData();
+            this.updateKPIs();
+
+            // Refresh order form dropdown if modal is open
+            const orderModal = document.getElementById('orderModal');
+            if (orderModal && orderModal.classList.contains('active')) {
+                const supplierSelect = document.getElementById('orderSupplier');
+                if (supplierSelect && this.suppliers && this.suppliers.length > 0) {
+                    const currentValue = supplierSelect.value;
+                    supplierSelect.innerHTML = '<option value="">-- Select Supplier --</option>' +
+                        this.suppliers.filter(s => s.status === 'active').map(s =>
+                            `<option value="${s.id}">${s.name} (${s.location})</option>`
+                        ).join('');
+                    if (currentValue) {
+                        supplierSelect.value = currentValue;
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error saving supplier:', error);
+            this.showNotification('Error saving supplier: ' + error.message, 'error');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+        }
+    }
+
+    async deleteSupplier(supplierId) {
+        const confirmed = await this.showConfirm(
+            'Delete Supplier',
+            'Are you sure you want to delete this supplier? This action cannot be undone.',
+            'warning'
+        );
+        if (!confirmed) return;
+
+        try {
+            await db.collection('suppliers').doc(supplierId).delete();
+            await this.loadData();
+            this.showNotification('Supplier deleted successfully!', 'success');
+            this.updateKPIs();
+        } catch (error) {
+            console.error('Error deleting supplier:', error);
+            this.showNotification('Error deleting supplier: ' + error.message, 'error');
+        }
+    }
+
+    editSupplier(supplierId) {
+        this.openSupplierModal(supplierId);
     }
 
     // Design Studio
@@ -3411,6 +3685,9 @@ Otomono Jersey Team
                 case 'materials':
                     this.renderMaterials();
                     break;
+                case 'suppliers':
+                    this.renderSuppliers();
+                    break;
             }
         }
     }
@@ -4017,7 +4294,10 @@ Otomono Jersey Team
     onPageChange(page) {
         // Wait a bit for DOM to be ready
         setTimeout(() => {
-            if (page === 'analytics') {
+            if (page === 'suppliers') {
+                this.renderSuppliers();
+                this.updateKPIs();
+            } else if (page === 'analytics') {
                 this.updateCharts();
                 // Recalculate KPIs with latest data
                 this.updateKPIs();
@@ -4121,6 +4401,21 @@ Otomono Jersey Team
             this.updateKPIs();
         } catch (error) {
             console.error('Error loading materials:', error);
+        }
+    }
+
+    async loadSuppliersData() {
+        if (!window.db) return;
+        try {
+            const suppliersSnapshot = await db.collection('suppliers').get();
+            this.suppliers = suppliersSnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            this.renderSuppliers();
+            this.updateKPIs();
+        } catch (error) {
+            console.error('Error loading suppliers:', error);
         }
     }
 

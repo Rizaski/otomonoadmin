@@ -70,3 +70,87 @@ exports.sendOrderConfirmation = functions.https.onCall(async (data, context) => 
         throw new functions.https.HttpsError('internal', 'Failed to send email', error.message);
     }
 });
+
+/**
+ * Firebase Cloud Function to send emails via Gmail SMTP
+ * 
+ * This function uses nodemailer with Gmail SMTP settings.
+ * The SMTP credentials (Gmail and App Password) are passed from the client.
+ * 
+ * For production, consider storing credentials in Firebase Functions config:
+ * firebase functions:config:set smtp.gmail="your-email@gmail.com" smtp.password="your-app-password"
+ * 
+ * Installation:
+ * cd functions && npm install nodemailer
+ */
+exports.sendEmailSMTP = functions.https.onCall(async (data, context) => {
+    // Verify authentication if needed
+    // if (!context.auth) {
+    //     throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    // }
+
+    const {
+        to,
+        from,
+        subject,
+        html,
+        smtp
+    } = data;
+
+    if (!to || !subject || !html) {
+        throw new functions.https.HttpsError('invalid-argument', 'Missing required email parameters');
+    }
+
+    // Use provided SMTP config or fallback to environment config
+    const smtpConfig = smtp || {
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false, // true for 465, false for other ports
+        auth: {
+            user: (functions.config().smtp && functions.config().smtp.gmail) || from,
+            pass: (functions.config().smtp && functions.config().smtp.password) || (data.smtp && data.smtp.auth && data.smtp.auth.pass)
+        }
+    };
+
+    if (!smtpConfig.auth.user || !smtpConfig.auth.pass) {
+        throw new functions.https.HttpsError('invalid-argument', 'SMTP credentials are required');
+    }
+
+    try {
+        // Dynamically require nodemailer (install: npm install nodemailer)
+        const nodemailer = require('nodemailer');
+
+        // Create transporter
+        const transporter = nodemailer.createTransport({
+            host: smtpConfig.host || 'smtp.gmail.com',
+            port: smtpConfig.port || 587,
+            secure: smtpConfig.secure || false,
+            auth: {
+                user: smtpConfig.auth.user,
+                pass: smtpConfig.auth.pass
+            }
+        });
+
+        // Verify connection
+        await transporter.verify();
+
+        // Send email
+        const info = await transporter.sendMail({
+            from: smtpConfig.auth.user,
+            to: to,
+            subject: subject,
+            html: html,
+            text: html.replace(/<[^>]*>/g, '') // Plain text version
+        });
+
+        return {
+            success: true,
+            messageId: info.messageId
+        };
+    } catch (error) {
+        console.error('Error sending email via SMTP:', error);
+        // Provide more detailed error message
+        const errorMessage = error.message || 'Unknown error occurred';
+        throw new functions.https.HttpsError('internal', 'Failed to send email', errorMessage);
+    }
+});

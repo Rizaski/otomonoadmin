@@ -1929,6 +1929,24 @@ button,
     margin-top: 10px;
 }
 
+/* Template Button Hover */
+.template-btn:hover {
+    background: rgba(255, 0, 60, 0.05) !important;
+    border-color: var(--accent-red) !important;
+    transform: translateX(5px);
+}
+
+/* Email Composer Styles */
+#emailComposerModal .modal-content {
+    max-width: 900px;
+    padding: 0;
+}
+
+#emailComposerModal textarea {
+    resize: vertical;
+    min-height: 250px;
+}
+
 /* Modal Actions */
 .modal-actions {
     display: flex;
